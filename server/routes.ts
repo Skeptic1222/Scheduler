@@ -293,6 +293,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sendSuccess(res, { user }, HTTP_STATUS.OK, req.id);
   }));
 
+  app.get('/api/users', requireAuth, asyncHandler(async (req: any, res: Response) => {
+    const users = await storage.getUsers();
+    sendSuccess(res, { users }, HTTP_STATUS.OK, req.id);
+  }));
+
+  app.post('/api/users', requireAuth, [
+    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
+    body('name').trim().escape().isLength({ min: 1, max: 100 }).withMessage('Name must be 1-100 characters'),
+    body('role').isIn(['staff', 'supervisor', 'admin']).withMessage('Valid role required'),
+    body('department_id').optional().isUUID().withMessage('Valid department ID required'),
+    body('seniority_years').optional().isInt({ min: 0, max: 50 }).withMessage('Seniority must be 0-50 years'),
+    body('skills').optional().isArray()
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      throw createError.forbidden('Administrator access required to create users');
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid input data', errors.array());
+    }
+
+    const existingUser = await storage.getUserByEmail(req.body.email);
+    if (existingUser) {
+      throw createError.conflictError('User with this email already exists');
+    }
+
+    const user = await storage.createUser(req.body);
+    sendSuccess(res, { user }, HTTP_STATUS.CREATED, req.id);
+  }));
+
+  app.put('/api/users/:id', requireAuth, [
+    body('name').optional().trim().escape().isLength({ min: 1, max: 100 }).withMessage('Name must be 1-100 characters'),
+    body('role').optional().isIn(['staff', 'supervisor', 'admin']).withMessage('Valid role required'),
+    body('department_id').optional().isUUID().withMessage('Valid department ID required'),
+    body('seniority_years').optional().isInt({ min: 0, max: 50 }).withMessage('Seniority must be 0-50 years'),
+    body('skills').optional().isArray()
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      throw createError.forbidden('Administrator access required to update users');
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid input data', errors.array());
+    }
+
+    const user = await storage.updateUser(req.params.id, req.body);
+    if (!user) {
+      throw createError.notFoundError('User not found');
+    }
+    sendSuccess(res, { user }, HTTP_STATUS.OK, req.id);
+  }));
+
   // Department routes
   app.get('/api/departments', requireAuth, asyncHandler(async (req: any, res: Response) => {
     const departments = await storage.getDepartments();

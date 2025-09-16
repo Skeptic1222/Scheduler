@@ -23,6 +23,7 @@ import { eq, and, desc, asc, gte, lte, isNull, ne } from "drizzle-orm";
 
 export interface IStorage {
   // Users
+  getUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -63,6 +64,14 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.is_active, true))
+      .orderBy(asc(users.name));
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db
       .select()
