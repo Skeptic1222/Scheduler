@@ -14,6 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (token: string) => Promise<void>;
   logout: () => void;
+  loginDev?: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     }
   };
 
+  const loginDev = async () => {
+    setIsLoading(true);
+    await verifyToken('dev-token');
+  };
+
   useEffect(() => {
     // Check for existing token on app start
     const token = localStorage.getItem('auth_token');
@@ -64,7 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     user,
     isLoading,
     login,
-    logout
+    logout,
+    loginDev: import.meta.env.DEV ? loginDev : undefined
   };
 
   return (
