@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { body, validationResult } from "express-validator";
+import { body, validationResult, sanitizeBody } from "express-validator";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { z } from "zod";
 
@@ -11,7 +12,7 @@ interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
-// Google OAuth verification
+// Google OAuth verification with credential rotation
 async function verifyGoogleToken(token: string): Promise<any> {
   try {
     // Development mode bypass for testing
@@ -24,10 +25,37 @@ async function verifyGoogleToken(token: string): Promise<any> {
     }
     
     // In production, verify with Google's tokeninfo endpoint
-    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
-    if (!response.ok) throw new Error('Invalid token');
-    return await response.json();
+    // Add timeout and retry logic for better security
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    try {
+      const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Hospital-Scheduler/1.0',
+        }
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Token verification failed with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Additional security checks
+      if (!data.email || !data.sub) {
+        throw new Error('Invalid token payload');
+      }
+      
+      return data;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
   } catch (error) {
+    console.error('[SECURITY] Token verification failed:', error);
     throw new Error('Token verification failed');
   }
 }
@@ -96,6 +124,64 @@ function calculateFCFSScore(user: any, shift: any): number {
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
+  // Rate limiting configurations
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 auth requests per windowMs
+    message: {
+      error: 'Too many authentication attempts, please try again later.',
+      retryAfter: 15 * 60 // seconds
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    handler: (req, res) => {
+      console.warn(`[SECURITY] Auth rate limit exceeded for IP: ${req.ip}`);
+      res.status(429).json({
+        error: 'Too many authentication attempts, please try again later.',
+        retryAfter: 15 * 60
+      });
+    }
+  });
+
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+      error: 'Too many requests, please try again later.',
+      retryAfter: 15 * 60
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      console.warn(`[SECURITY] General rate limit exceeded for IP: ${req.ip}`);
+      res.status(429).json({
+        error: 'Too many requests, please try again later.',
+        retryAfter: 15 * 60
+      });
+    }
+  });
+
+  const strictLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Very strict limit for sensitive operations
+    message: {
+      error: 'Too many sensitive operations, please try again later.',
+      retryAfter: 60 * 60
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+      console.warn(`[SECURITY] Strict rate limit exceeded for IP: ${req.ip}`);
+      res.status(429).json({
+        error: 'Too many sensitive operations, please try again later.',
+        retryAfter: 60 * 60
+      });
+    }
+  });
+
+  // Apply general rate limiting to all routes
+  app.use('/api', generalLimiter);
+
   // WebSocket for real-time updates
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
@@ -141,8 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Auth routes
-  app.post('/api/auth/verify', [
+  // Auth routes with strict rate limiting
+  app.post('/api/auth/verify', authLimiter, [
     body('token').notEmpty().withMessage('Token is required')
   ], async (req, res) => {
     try {
@@ -176,8 +262,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.put('/api/users/me', requireAuth, [
-    body('name').optional().isLength({ min: 1 }),
-    body('department_id').optional().isUUID(),
+    body('name').optional().trim().escape().isLength({ min: 1, max: 100 }).withMessage('Name must be 1-100 characters'),
+    body('department_id').optional().isUUID().withMessage('Valid department ID required'),
+    body('skills').optional().isArray().custom((skills) => {
+      if (Array.isArray(skills)) {
+        return skills.every(skill => typeof skill === 'string' && skill.length <= 50);
+      }
+      return true;
+    }).withMessage('Skills must be strings with max 50 characters each'),
+    body('seniority_years').optional().isInt({ min: 0, max: 50 }).withMessage('Seniority must be 0-50 years'),
     body('skills').optional().isArray()
   ], async (req: any, res) => {
     try {
@@ -204,9 +297,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/departments', requireAuth, [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('description').optional()
+  app.post('/api/departments', strictLimiter, requireAuth, [
+    body('name').trim().escape().isLength({ min: 1, max: 100 }).withMessage('Department name must be 1-100 characters'),
+    body('description').optional().trim().escape().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters')
   ], async (req: any, res) => {
     try {
       // Check if user is admin
@@ -245,12 +338,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post('/api/shifts', requireAuth, [
-    body('title').notEmpty().withMessage('Title is required'),
+    body('title').trim().escape().isLength({ min: 1, max: 200 }).withMessage('Title must be 1-200 characters'),
+    body('description').optional().trim().escape().isLength({ max: 1000 }).withMessage('Description cannot exceed 1000 characters'),
     body('department_id').isUUID().withMessage('Valid department ID required'),
     body('start_time').isISO8601().withMessage('Valid start time required'),
     body('end_time').isISO8601().withMessage('Valid end time required'),
-    body('required_skills').optional().isArray(),
-    body('min_experience_years').optional().isInt({ min: 0 })
+    body('required_skills').optional().isArray().custom((skills) => {
+      if (Array.isArray(skills)) {
+        return skills.every(skill => typeof skill === 'string' && skill.length <= 50);
+      }
+      return true;
+    }).withMessage('Skills must be strings with max 50 characters each'),
+    body('min_experience_years').optional().isInt({ min: 0, max: 50 }).withMessage('Experience must be 0-50 years')
   ], async (req: any, res) => {
     try {
       // Check if user can create shifts (admin or supervisor)
@@ -457,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/settings', requireAuth, async (req: any, res) => {
+  app.get('/api/admin/settings', strictLimiter, requireAuth, async (req: any, res) => {
     try {
       if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });

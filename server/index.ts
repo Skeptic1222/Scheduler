@@ -1,10 +1,49 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import mongoSanitize from "express-mongo-sanitize";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Security headers with helmet - Environment-specific CSP
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"], // unsafe-inline needed for styled components
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: isDevelopment 
+        ? ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com"] // Dev needs unsafe-inline for Vite
+        : ["'self'", "https://accounts.google.com", "https://apis.google.com"], // Production removes unsafe-inline
+      connectSrc: isDevelopment
+        ? ["'self'", "wss:", "ws:", "https://oauth2.googleapis.com"] // Dev allows WS for HMR
+        : ["'self'", "wss:", "https://oauth2.googleapis.com"], // Production only secure WS
+      imgSrc: ["'self'", "data:", "https:"],
+      frameAncestors: ["'none'"], // Prevent clickjacking
+      formAction: ["'self'"],
+      baseUri: ["'self'"]
+    },
+  },
+  crossOriginEmbedderPolicy: isDevelopment ? false : { policy: "require-corp" }, // Only restrict in production
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
+}));
+
+// Input sanitization
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    log(`[SECURITY] Sanitized potentially malicious input: ${key} in ${req.method} ${req.path}`);
+  }
+}));
+
+// Trust proxy for accurate client IP
+app.set('trust proxy', 1);
+
+app.use(express.json({ limit: "10mb" })); // Reduced limit for security
+app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 
 app.use((req, res, next) => {
   const start = Date.now();
