@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,12 @@ import { Phone, Clock, User, Calendar, Plus, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
+import { useSocket } from "@/hooks/use-socket";
 
 export default function OnCall() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const socket = useSocket();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -103,11 +105,22 @@ export default function OnCall() {
   };
 
   const handleEdit = (schedule: any) => {
+    // Format dates to local datetime-local input format (YYYY-MM-DDTHH:mm)
+    const formatDateForInput = (dateString: string) => {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     setFormData({
       user_id: schedule.assigned_user_id || "",
       department_id: schedule.department_id,
-      start_time: new Date(schedule.start_time).toISOString().slice(0, 16),
-      end_time: new Date(schedule.end_time).toISOString().slice(0, 16),
+      start_time: formatDateForInput(schedule.start_time),
+      end_time: formatDateForInput(schedule.end_time),
       shift_type: schedule.title?.includes('Emergency') ? 'emergency' : 
                  schedule.title?.includes('On-Call') ? 'on-call' : 'regular'
     });
@@ -127,6 +140,35 @@ export default function OnCall() {
   };
 
   const canManageOnCall = user?.role === 'admin' || user?.role === 'supervisor';
+
+  // Subscribe to WebSocket events for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOnCallCreated = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/on-call"] });
+      toast({
+        title: "New on-call schedule",
+        description: "A new on-call schedule has been created.",
+      });
+    };
+
+    const handleOnCallUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/on-call"] });
+      toast({
+        title: "On-call schedule updated",
+        description: "An on-call schedule has been updated.",
+      });
+    };
+
+    socket.on('on_call_created', handleOnCallCreated);
+    socket.on('on_call_updated', handleOnCallUpdated);
+
+    return () => {
+      socket.off('on_call_created', handleOnCallCreated);
+      socket.off('on_call_updated', handleOnCallUpdated);
+    };
+  }, [socket, toast]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);

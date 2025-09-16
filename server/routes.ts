@@ -214,10 +214,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Broadcast to all connected clients
+  // Broadcast to authenticated clients only
   function broadcast(data: any) {
     wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
+      // Only send to authenticated clients
+      if (client.readyState === WebSocket.OPEN && (client as any).user) {
         client.send(JSON.stringify(data));
       }
     });
