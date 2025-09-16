@@ -1,30 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { Header } from "@/components/header";
-import { Sidebar } from "@/components/sidebar";
 import { StatusCard } from "@/components/ui/status-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
-import { useState } from "react";
 
 export default function AdminPanel() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
 
   const { data: adminData, isLoading } = useQuery({
     queryKey: ["/api/admin/settings"],
-    enabled: user?.role === "admin"
-  });
-
-  const { data: notificationsData } = useQuery({
-    queryKey: ["/api/notifications"],
-    queryParams: { unread_only: "true" },
-    select: (data) => data.notifications || []
+    enabled: user?.role === "admin",
+    select: (data: any) => data?.data || data || {}
   });
 
   if (user?.role !== 'admin') {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center p-6">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
@@ -39,36 +30,21 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        user={user}
-        notificationCount={notificationsData?.length || 0}
-        databaseStatus={adminData?.database}
-        onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      />
-      
-      <div className="flex">
-        <Sidebar 
-          userRole={user?.role || 'staff'}
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-        />
-        
-        <main className="flex-1 overflow-auto">
-          <div className="p-6 border-b border-border bg-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">System Administration</h1>
-                <p className="text-muted-foreground">Database connections, settings, and system health</p>
-              </div>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <i className="fas fa-sync-alt mr-2"></i>
-                Refresh Status
-              </Button>
-            </div>
+    <div className="container mx-auto">
+      <div className="p-6 border-b border-border bg-card">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">System Administration</h1>
+            <p className="text-muted-foreground">Database connections, settings, and system health</p>
           </div>
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <i className="fas fa-sync-alt mr-2"></i>
+            Refresh Status
+          </Button>
+        </div>
+      </div>
 
-          <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
             {/* System Status Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatusCard
@@ -219,9 +195,7 @@ export default function AdminPanel() {
                   )}
                 </div>
               </CardContent>
-            </Card>
-          </div>
-        </main>
+        </Card>
       </div>
     </div>
   );
