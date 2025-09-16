@@ -47,6 +47,10 @@ export function Sidebar({ userRole, isOpen, onClose }: SidebarProps) {
   const isActive = (href: string) => {
     if (href === "/" && location === "/") return true;
     if (href !== "/") {
+      // For /shifts/create, don't match /shifts
+      if (href === "/shifts" && location.startsWith("/shifts/")) {
+        return false;
+      }
       // Exact match or path with trailing slash to avoid partial matches
       return location === href || location.startsWith(href + "/");
     }
