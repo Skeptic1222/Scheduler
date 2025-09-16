@@ -682,6 +682,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // On-call schedule routes
+  app.get('/api/on-call', requireAuth, asyncHandler(async (req: any, res: Response) => {
+    // For now, return shifts that are marked as on-call or have on-call type
+    const shifts = await storage.getShifts({ status: 'assigned' });
+    sendSuccess(res, { onCall: shifts }, HTTP_STATUS.OK, req.id);
+  }));
+
+  app.post('/api/on-call', requireAuth, [
+    body('user_id').isUUID().withMessage('Valid user ID required'),
+    body('department_id').isUUID().withMessage('Valid department ID required'),
+    body('start_time').isISO8601().withMessage('Valid start time required'),
+    body('end_time').isISO8601().withMessage('Valid end time required'),
+    body('shift_type').optional().isIn(['on-call', 'emergency', 'regular']).withMessage('Valid shift type required')
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user can create on-call schedules (admin or supervisor)
+    if (!['admin', 'supervisor'].includes(req.user.role)) {
+      throw createError.forbidden('Administrator or supervisor access required to manage on-call schedules');
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid on-call schedule data', errors.array());
+    }
+
+    // Create on-call schedule (using shifts table with special type)
+    const onCallData = {
+      title: `On-Call: ${req.body.shift_type || 'Regular'}`,
+      description: `On-call schedule`,
+      department_id: req.body.department_id,
+      start_time: new Date(req.body.start_time),
+      end_time: new Date(req.body.end_time),
+      assigned_user_id: req.body.user_id,
+      created_by: req.user.id,
+      status: 'assigned',
+      required_skills: [],
+      min_experience_years: 0
+    };
+
+    const onCallSchedule = await storage.createShift(onCallData);
+    
+    // Create audit log
+    await storage.createAuditLog({
+      user_id: req.user.id,
+      action: 'CREATE_ON_CALL',
+      resource_type: 'on_call',
+      resource_id: onCallSchedule.id,
+      details: { user_id: req.body.user_id, department_id: req.body.department_id }
+    });
+
+    // Broadcast to connected clients
+    broadcast({
+      type: 'on_call_created',
+      onCall: onCallSchedule
+    });
+
+    sendSuccess(res, { onCall: onCallSchedule }, HTTP_STATUS.CREATED, req.id);
+  }));
+
+  app.put('/api/on-call/:id', requireAuth, [
+    body('user_id').optional().isUUID().withMessage('Valid user ID required'),
+    body('start_time').optional().isISO8601().withMessage('Valid start time required'),
+    body('end_time').optional().isISO8601().withMessage('Valid end time required'),
+    body('shift_type').optional().isIn(['on-call', 'emergency', 'regular']).withMessage('Valid shift type required')
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user can update on-call schedules (admin or supervisor)
+    if (!['admin', 'supervisor'].includes(req.user.role)) {
+      throw createError.forbidden('Administrator or supervisor access required to manage on-call schedules');
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid on-call schedule data', errors.array());
+    }
+
+    const { id } = req.params;
+    const updateData: any = {};
+    
+    if (req.body.user_id) updateData.assigned_user_id = req.body.user_id;
+    if (req.body.start_time) updateData.start_time = new Date(req.body.start_time);
+    if (req.body.end_time) updateData.end_time = new Date(req.body.end_time);
+    if (req.body.shift_type) updateData.title = `On-Call: ${req.body.shift_type}`;
+
+    const onCallSchedule = await storage.updateShift(id, updateData);
+    
+    if (!onCallSchedule) {
+      throw createError.notFound('On-call schedule not found');
+    }
+
+    // Create audit log
+    await storage.createAuditLog({
+      user_id: req.user.id,
+      action: 'UPDATE_ON_CALL',
+      resource_type: 'on_call',
+      resource_id: onCallSchedule.id,
+      details: updateData
+    });
+
+    // Broadcast to connected clients
+    broadcast({
+      type: 'on_call_updated',
+      onCall: onCallSchedule
+    });
+
+    sendSuccess(res, { onCall: onCallSchedule }, HTTP_STATUS.OK, req.id);
+  }));
+
   // Admin routes
   app.get('/api/admin/settings', strictLimiter, requireAuth, async (req: any, res) => {
     try {
