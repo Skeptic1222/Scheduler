@@ -44,8 +44,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsMobileMenuOpen(false)}
         />
         
-        <main className="flex-1 overflow-auto">
-          {children}
+        <main className="flex-1 overflow-auto lg:ml-64">
+          <div className="w-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>
