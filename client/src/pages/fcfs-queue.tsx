@@ -1,13 +1,73 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useSocket } from "@/hooks/use-socket";
+import { useEffect } from "react";
 
 export default function FCFSQueue() {
+  const { toast } = useToast();
+  const { isConnected, lastMessage } = useSocket();
   const { data: queueItems, isLoading } = useQuery({
     queryKey: ["/api/fcfs-queue"],
   });
+
+  // Listen for WebSocket updates and refresh the queue
+  useEffect(() => {
+    if (lastMessage) {
+      try {
+        const message = JSON.parse(lastMessage);
+        if (message.type === 'fcfs_response' || message.type === 'shift_created') {
+          // Invalidate and refetch the FCFS queue when there are updates
+          queryClient.invalidateQueries({ queryKey: ["/api/fcfs-queue"] });
+        }
+      } catch (error) {
+        // Ignore JSON parse errors
+      }
+    }
+  }, [lastMessage]);
+
+  // Mutation for responding to FCFS queue entries
+  const respondToQueue = useMutation({
+    mutationFn: async ({ queueId, response }: { queueId: string; response: 'accept' | 'decline' }) => {
+      const res = await apiRequest('POST', '/api/fcfs-queue/respond', {
+        queue_id: queueId,
+        response
+      });
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate and refetch the FCFS queue
+      queryClient.invalidateQueries({ queryKey: ["/api/fcfs-queue"] });
+      
+      // Show success message
+      toast({
+        title: variables.response === 'accept' ? "Shift Accepted!" : "Shift Declined",
+        description: variables.response === 'accept' 
+          ? "You have successfully accepted this shift assignment."
+          : "You have declined this shift assignment.",
+        variant: variables.response === 'accept' ? "default" : "destructive",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to process your response. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleAccept = (queueId: string) => {
+    respondToQueue.mutate({ queueId, response: 'accept' });
+  };
+
+  const handleDecline = (queueId: string) => {
+    respondToQueue.mutate({ queueId, response: 'decline' });
+  };
 
   if (isLoading) {
     return (
@@ -44,9 +104,9 @@ export default function FCFSQueue() {
             <p className="text-muted-foreground">First-Come, First-Served shift assignment queue</p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
+            <Badge variant={isConnected ? "default" : "secondary"} className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Live Updates
+              {isConnected ? "Live Updates" : "Connecting..."}
             </Badge>
           </div>
         </div>
@@ -94,11 +154,24 @@ export default function FCFSQueue() {
                     
                     {item.status === 'pending' && (
                       <div className="flex gap-2 items-end">
-                        <Button size="sm" className="flex-1" data-testid={`button-accept-${item.id}`}>
+                        <Button 
+                          size="sm" 
+                          className="flex-1" 
+                          data-testid={`button-accept-${item.id}`}
+                          onClick={() => handleAccept(item.id)}
+                          disabled={respondToQueue.isPending}
+                        >
                           <CheckCircle className="mr-1 h-4 w-4" />
                           Accept
                         </Button>
-                        <Button size="sm" variant="outline" className="flex-1" data-testid={`button-decline-${item.id}`}>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1" 
+                          data-testid={`button-decline-${item.id}`}
+                          onClick={() => handleDecline(item.id)}
+                          disabled={respondToQueue.isPending}
+                        >
                           <XCircle className="mr-1 h-4 w-4" />
                           Decline
                         </Button>

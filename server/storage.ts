@@ -19,7 +19,7 @@ import {
   type InsertAuditLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, gte, lte, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, gte, lte, isNull, ne } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -45,9 +45,10 @@ export interface IStorage {
   updateShift(id: string, updates: Partial<InsertShift>): Promise<Shift>;
   
   // FCFS Queue
-  getFcfsQueue(shift_id?: string): Promise<FcfsQueue[]>;
+  getFcfsQueue(shift_id?: string, user_id?: string): Promise<any[]>;
   addToFcfsQueue(entry: InsertFcfsQueue): Promise<FcfsQueue>;
   updateFcfsQueueEntry(id: string, updates: Partial<InsertFcfsQueue>): Promise<FcfsQueue>;
+  getEligibleUsersForShift(shift: Shift): Promise<User[]>;
   
   // Notifications
   getUserNotifications(user_id: string, unread_only?: boolean): Promise<Notification[]>;
@@ -177,15 +178,44 @@ export class DatabaseStorage implements IStorage {
     return shift;
   }
 
-  async getFcfsQueue(shift_id?: string): Promise<FcfsQueue[]> {
-    let query = db
-      .select()
-      .from(fcfs_queue)
-      .orderBy(desc(fcfs_queue.priority_score), asc(fcfs_queue.created_at));
-
+  async getFcfsQueue(shift_id?: string, user_id?: string): Promise<any[]> {
+    const conditions = [];
     if (shift_id) {
-      query = query.where(eq(fcfs_queue.shift_id, shift_id));
+      conditions.push(eq(fcfs_queue.shift_id, shift_id));
     }
+    if (user_id) {
+      conditions.push(eq(fcfs_queue.user_id, user_id));
+    }
+
+    const query = db
+      .select({
+        id: fcfs_queue.id,
+        shift_id: fcfs_queue.shift_id,
+        user_id: fcfs_queue.user_id,
+        priority_score: fcfs_queue.priority_score,
+        response_deadline: fcfs_queue.response_deadline,
+        status: fcfs_queue.status,
+        created_at: fcfs_queue.created_at,
+        updated_at: fcfs_queue.updated_at,
+        shift: {
+          id: shifts.id,
+          title: shifts.title,
+          description: shifts.description,
+          start_time: shifts.start_time,
+          end_time: shifts.end_time,
+          status: shifts.status,
+          department: {
+            id: departments.id,
+            name: departments.name,
+            description: departments.description
+          }
+        }
+      })
+      .from(fcfs_queue)
+      .leftJoin(shifts, eq(fcfs_queue.shift_id, shifts.id))
+      .leftJoin(departments, eq(shifts.department_id, departments.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(fcfs_queue.priority_score), asc(fcfs_queue.created_at));
 
     return await query;
   }
@@ -236,6 +266,21 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ is_read: true })
       .where(eq(notifications.id, id));
+  }
+
+  async getEligibleUsersForShift(shift: Shift): Promise<User[]> {
+    // Get users from the same department who are active
+    const eligibleUsers = await db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.department_id, shift.department_id),
+        eq(users.is_active, true),
+        // Exclude the user who created the shift
+        ne(users.id, shift.created_by)
+      ));
+    
+    return eligibleUsers;
   }
 
   async createAuditLog(insertAuditLog: InsertAuditLog): Promise<AuditLog> {

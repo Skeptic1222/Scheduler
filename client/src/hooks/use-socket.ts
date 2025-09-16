@@ -24,18 +24,18 @@ export function useSocket() {
     // Set initial connection status
     setIsConnected(socketManager.isConnected);
 
-    // Set auth token if user is logged in
-    if (user) {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        socketManager.setToken(token);
-      }
-    }
-
     return () => {
       socketManager.off('connectionChange', handleConnectionChange);
       socketManager.off('message', handleMessage);
     };
+  }, []);
+
+  // Separate effect for auth token management
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      socketManager.setToken(token);
+    }
   }, [user]);
 
   const sendMessage = (data: any) => {

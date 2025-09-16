@@ -262,8 +262,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const shift = await storage.createShift(shiftData);
 
       // Add eligible staff to FCFS queue
-      const eligibleUsers = await storage.getShifts(); // Get all users (simplified)
-      // In reality, filter by department, skills, etc.
+      const eligibleUsers = await storage.getEligibleUsersForShift(shift);
+      
+      // Calculate response deadline (e.g., 24 hours from now)
+      const responseDeadline = new Date();
+      responseDeadline.setHours(responseDeadline.getHours() + 24);
+      
+      // Add each eligible user to FCFS queue with calculated priority scores
+      for (const user of eligibleUsers) {
+        const priorityScore = calculateFCFSScore(user, shift);
+        
+        await storage.addToFcfsQueue({
+          shift_id: shift.id,
+          user_id: user.id,
+          priority_score: priorityScore,
+          response_deadline: responseDeadline,
+          status: 'pending'
+        });
+        
+        // Create notification for the user
+        await storage.createNotification({
+          user_id: user.id,
+          type: 'shift_assignment',
+          title: 'New Shift Available',
+          message: `You have been assigned to the FCFS queue for shift: ${shift.title}`,
+          data: { shift_id: shift.id },
+          is_read: false
+        });
+      }
+      
+      // Update shift status to indicate it's in queue
+      await storage.updateShift(shift.id, { status: 'in_queue' });
       
       // Create audit log
       await storage.createAuditLog({
@@ -290,8 +319,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/fcfs-queue', requireAuth, async (req: any, res) => {
     try {
       const { shift_id } = req.query;
-      const queue = await storage.getFcfsQueue(shift_id as string);
-      res.json({ queue });
+      // Only return queue entries for the authenticated user
+      const queue = await storage.getFcfsQueue(shift_id as string, req.user.id);
+      res.json(queue);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch FCFS queue' });
     }
@@ -309,19 +339,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { queue_id, response } = req.body;
       
-      const queueEntry = await storage.updateFcfsQueueEntry(queue_id, {
-        status: response === 'accept' ? 'accepted' : 'declined'
-      });
+      // First, get the queue entry to verify ownership and check if it's still valid
+      const queueEntries = await storage.getFcfsQueue(undefined, req.user.id);
+      const queueEntry = queueEntries.find(entry => entry.id === queue_id);
+      
+      if (!queueEntry) {
+        return res.status(404).json({ error: 'Queue entry not found or you do not have permission to respond to it' });
+      }
+      
+      if (queueEntry.status !== 'pending') {
+        return res.status(400).json({ error: 'Queue entry has already been responded to' });
+      }
+      
+      // Check if response deadline has passed
+      if (new Date() > new Date(queueEntry.response_deadline)) {
+        return res.status(400).json({ error: 'Response deadline has passed' });
+      }
+
+      let updatedQueueEntry;
+      let assignedShift = null;
 
       if (response === 'accept') {
-        // Update shift to assign user
+        // Get the shift to check if it's still available (concurrency protection)
         const shift = await storage.getShift(queueEntry.shift_id);
-        if (shift) {
-          await storage.updateShift(shift.id, {
-            status: 'assigned',
-            assigned_user_id: req.user.id
-          });
+        if (!shift) {
+          return res.status(404).json({ error: 'Shift not found' });
         }
+        
+        if (shift.status !== 'in_queue') {
+          return res.status(409).json({ error: 'Shift has already been assigned to another user' });
+        }
+        
+        // Update both queue entry and shift in proper order to prevent race conditions
+        updatedQueueEntry = await storage.updateFcfsQueueEntry(queue_id, {
+          status: 'accepted'
+        });
+        
+        assignedShift = await storage.updateShift(shift.id, {
+          status: 'assigned',
+          assigned_user_id: req.user.id
+        });
+        
+        // Mark all other pending queue entries for this shift as expired
+        const allQueueEntries = await storage.getFcfsQueue(shift.id);
+        for (const entry of allQueueEntries) {
+          if (entry.id !== queue_id && entry.status === 'pending') {
+            await storage.updateFcfsQueueEntry(entry.id, { status: 'expired' });
+          }
+        }
+      } else {
+        // Just update the queue entry for decline
+        updatedQueueEntry = await storage.updateFcfsQueueEntry(queue_id, {
+          status: 'declined'
+        });
       }
 
       // Create audit log
@@ -330,18 +400,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: `FCFS_${response.toUpperCase()}`,
         resource_type: 'fcfs_queue',
         resource_id: queue_id,
-        details: { response }
+        details: { response, shift_id: queueEntry.shift_id }
       });
 
       // Broadcast update
       broadcast({
         type: 'fcfs_response',
-        queue_entry: queueEntry,
+        queue_entry: updatedQueueEntry,
+        shift: assignedShift,
         response
       });
 
-      res.json({ success: true, queue_entry: queueEntry });
+      res.json({ 
+        success: true, 
+        queue_entry: updatedQueueEntry,
+        shift: assignedShift
+      });
     } catch (error) {
+      console.error('Error processing FCFS response:', error);
       res.status(500).json({ error: 'Failed to process response' });
     }
   });

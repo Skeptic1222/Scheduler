@@ -7,6 +7,8 @@ export class SocketManager {
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
 
   constructor() {
+    // Try to get token from localStorage on initialization
+    this.token = localStorage.getItem('auth_token');
     this.connect();
   }
 
