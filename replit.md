@@ -5,14 +5,15 @@
 A comprehensive hospital shift scheduling application with First Come First Served (FCFS) queue distribution, built for healthcare institutions requiring efficient, fair, and compliant staff scheduling. The system features real-time updates, role-based access control, and HIPAA-compliant audit logging.
 
 **Key Features:**
-- 🏥 Complete staff management with department assignments
+- 🏥 Complete staff management with department assignments and editing
 - 📅 Advanced shift scheduling with skills and experience matching  
 - 🔄 Real-time WebSocket updates for instant notifications
 - 🔒 Role-based access control (Admin/Supervisor/Staff)
 - 📱 Fully responsive mobile-first design
-- 🚨 On-call staff tracking and emergency paging
+- 🚨 On-call staff tracking, scheduling, and emergency paging
 - 📊 Live dashboard with system health monitoring
 - 🔐 HIPAA-compliant audit logging with PHI/PII protection
+- ✏️ Full CRUD operations for all entities with permission controls
 
 ## User Preferences
 
