@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Shifts() {
   const { data: shifts, isLoading } = useQuery({
     queryKey: ["/api/shifts"],
+    select: (data) => data?.data?.shifts || data?.shifts || []
   });
 
   if (isLoading) {
@@ -43,10 +45,12 @@ export default function Shifts() {
             <h1 className="text-2xl font-bold" data-testid="page-title-shifts">Available Shifts</h1>
             <p className="text-muted-foreground">Browse and apply for available hospital shifts</p>
           </div>
-          <Button data-testid="button-create-shift">
-            <Calendar className="mr-2 h-4 w-4" />
-            Create New Shift
-          </Button>
+          <Link href="/shifts/create">
+            <Button data-testid="button-create-shift">
+              <Calendar className="mr-2 h-4 w-4" />
+              Create New Shift
+            </Button>
+          </Link>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

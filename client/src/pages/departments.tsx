@@ -1,11 +1,61 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Building, Users, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth";
 
 export default function Departments() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: ""
+  });
+
   const { data: departments, isLoading } = useQuery({
     queryKey: ["/api/departments"],
+    select: (data) => data?.data?.departments || data?.departments || []
   });
+
+  const createDepartmentMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string }) => {
+      const response = await apiRequest("POST", "/api/departments", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create department");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Department created successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      setIsCreateDialogOpen(false);
+      setFormData({ name: "", description: "" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createDepartmentMutation.mutate(formData);
+  };
 
   if (isLoading) {
     return (
@@ -28,9 +78,17 @@ export default function Departments() {
   return (
     <div className="container mx-auto p-6">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold" data-testid="page-title-departments">Departments</h1>
-          <p className="text-muted-foreground">Hospital departments and divisions</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold" data-testid="page-title-departments">Departments</h1>
+            <p className="text-muted-foreground">Hospital departments and divisions</p>
+          </div>
+          {user?.role === 'admin' && (
+            <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-add-department">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Department
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -67,6 +125,49 @@ export default function Departments() {
           )}
         </div>
       </div>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Department</DialogTitle>
+            <DialogDescription>
+              Add a new department to the hospital system
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Department Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Emergency Department"
+                required
+                data-testid="input-department-name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description of the department"
+                rows={3}
+                data-testid="input-department-description"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createDepartmentMutation.isPending}>
+                {createDepartmentMutation.isPending ? "Creating..." : "Create Department"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,13 +24,18 @@ export default function CreateShift() {
 
   const { data: departments } = useQuery({
     queryKey: ["/api/departments"],
+    select: (data) => data?.data?.departments || data?.departments || []
   });
 
   const createShiftMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/shifts", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/shifts", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create shift");
+      }
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
       toast({
