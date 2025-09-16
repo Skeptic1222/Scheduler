@@ -85,6 +85,9 @@ const requireAuth = asyncHandler(async (req: AuthenticatedRequest, res: Response
         name: userData.name,
         role: defaultRole
       });
+    } else if (userData.email === 'admin@hospital.dev' && user.role !== 'admin') {
+      // Update existing admin@hospital.dev user to have admin role
+      user = await storage.updateUser(user.id, { role: 'admin' });
     }
 
   req.user = user;
@@ -252,6 +255,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: userData.name,
           role: defaultRole
         });
+      } else if (userData.email === 'admin@hospital.dev' && user.role !== 'admin') {
+        // Update existing admin@hospital.dev user to have admin role
+        user = await storage.updateUser(user.id, { role: 'admin' });
       }
 
       sendSuccess(res, { user }, HTTP_STATUS.OK, (req as any).id);
