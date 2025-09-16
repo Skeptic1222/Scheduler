@@ -15,6 +15,7 @@ import CreateShift from "@/pages/create-shift";
 import MyShifts from "@/pages/my-shifts";
 import Staff from "@/pages/staff";
 import Departments from "@/pages/departments";
+import OnCall from "@/pages/on-call";
 import Audit from "@/pages/audit";
 import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
@@ -78,6 +79,7 @@ function Router() {
         <Route path="/fcfs-queue" component={FCFSQueue} />
         <Route path="/shifts/create" component={CreateShift} />
         <Route path="/my-shifts" component={MyShifts} />
+        <Route path="/on-call" component={OnCall} />
         <Route path="/staff" component={Staff} />
         <Route path="/departments" component={Departments} />
         <Route path="/audit" component={Audit} />

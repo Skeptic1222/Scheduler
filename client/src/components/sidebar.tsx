@@ -23,7 +23,8 @@ export function Sidebar({ userRole, isOpen, onClose }: SidebarProps) {
         { href: "/shifts/create", icon: "fas fa-calendar-plus", label: "Create Shift", roles: ["admin", "supervisor"] },
         { href: "/shifts", icon: "fas fa-list", label: "Available Shifts", roles: ["admin", "supervisor", "staff"] },
         { href: "/fcfs-queue", icon: "fas fa-clock", label: "FCFS Queue", roles: ["admin", "supervisor", "staff"] },
-        { href: "/my-shifts", icon: "fas fa-user-check", label: "My Shifts", roles: ["admin", "supervisor", "staff"] }
+        { href: "/my-shifts", icon: "fas fa-user-check", label: "My Shifts", roles: ["admin", "supervisor", "staff"] },
+        { href: "/on-call", icon: "fas fa-phone", label: "On-Call", roles: ["admin", "supervisor", "staff"] }
       ]
     },
     {
