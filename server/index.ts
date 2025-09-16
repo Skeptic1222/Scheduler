@@ -3,8 +3,12 @@ import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { globalErrorHandler, requestIdMiddleware } from "./utils/errors";
 
 const app = express();
+
+// Add request ID middleware for request tracking
+app.use(requestIdMiddleware);
 
 // Security headers with helmet - Environment-specific CSP
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -61,11 +65,36 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        // Redact sensitive information for HIPAA compliance
+        const redactSensitiveData = (obj: any): any => {
+          if (typeof obj !== 'object' || obj === null) return obj;
+          
+          const redacted = { ...obj };
+          const sensitiveFields = ['email', 'name', 'personal_info', 'ssn', 'phone', 'address'];
+          
+          // Redact sensitive fields
+          for (const field of sensitiveFields) {
+            if (redacted[field]) {
+              redacted[field] = '[REDACTED]';
+            }
+          }
+          
+          // Recursively redact nested objects
+          for (const key in redacted) {
+            if (typeof redacted[key] === 'object' && redacted[key] !== null) {
+              redacted[key] = redactSensitiveData(redacted[key]);
+            }
+          }
+          
+          return redacted;
+        };
+        
+        const safeResponse = redactSensitiveData(capturedJsonResponse);
+        logLine += ` :: ${JSON.stringify(safeResponse)}`;
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      if (logLine.length > 200) {
+        logLine = logLine.slice(0, 199) + "…";
       }
 
       log(logLine);
@@ -78,13 +107,8 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Use comprehensive error handling middleware
+  app.use(globalErrorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

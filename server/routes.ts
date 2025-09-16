@@ -5,8 +5,15 @@ import { body, validationResult, sanitizeBody } from "express-validator";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { z } from "zod";
-
 import { Request, Response, NextFunction } from "express";
+import { 
+  AppError, 
+  createError, 
+  sendSuccess, 
+  sendError, 
+  asyncHandler,
+  HTTP_STATUS 
+} from "./utils/errors";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
@@ -61,17 +68,16 @@ async function verifyGoogleToken(token: string): Promise<any> {
 }
 
 // Auth middleware
-const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
+const requireAuth = asyncHandler(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) {
+    throw createError.authRequired('Authorization token is required');
+  }
 
-    const userData = await verifyGoogleToken(token);
-    let user = await storage.getUserByEmail(userData.email);
-    
-    if (!user) {
+  const userData = await verifyGoogleToken(token);
+  let user = await storage.getUserByEmail(userData.email);
+  
+  if (!user) {
       // Create user if doesn't exist
       const defaultRole = userData.email === 'admin@hospital.dev' ? 'admin' : 'staff';
       user = await storage.createUser({
@@ -81,12 +87,9 @@ const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextF
       });
     }
 
-    req.user = user;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Authentication failed' });
-  }
-};
+  req.user = user;
+  next();
+});
 
 // FCFS Algorithm
 function calculateFCFSScore(user: any, shift: any): number {
@@ -230,14 +233,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes with strict rate limiting
   app.post('/api/auth/verify', authLimiter, [
     body('token').notEmpty().withMessage('Token is required')
-  ], async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
+  ], asyncHandler(async (req: any, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid input data', errors.array());
+    }
 
-      const { token } = req.body;
+    const { token } = req.body;
+    
+    try {
       const userData = await verifyGoogleToken(token);
       let user = await storage.getUserByEmail(userData.email);
       
@@ -250,16 +254,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({ user });
+      sendSuccess(res, { user }, HTTP_STATUS.OK, (req as any).id);
     } catch (error) {
-      res.status(401).json({ error: 'Invalid token' });
+      throw createError.invalidToken('Authentication failed - invalid or expired token');
     }
-  });
+  }));
 
   // User routes
-  app.get('/api/users/me', requireAuth, async (req: any, res) => {
-    res.json({ user: req.user });
-  });
+  app.get('/api/users/me', requireAuth, asyncHandler(async (req: any, res: Response) => {
+    sendSuccess(res, { user: req.user }, HTTP_STATUS.OK, req.id);
+  }));
 
   app.put('/api/users/me', requireAuth, [
     body('name').optional().trim().escape().isLength({ min: 1, max: 100 }).withMessage('Name must be 1-100 characters'),
@@ -272,70 +276,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }).withMessage('Skills must be strings with max 50 characters each'),
     body('seniority_years').optional().isInt({ min: 0, max: 50 }).withMessage('Seniority must be 0-50 years'),
     body('skills').optional().isArray()
-  ], async (req: any, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const updates = req.body;
-      const user = await storage.updateUser(req.user.id, updates);
-      res.json({ user });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to update user' });
+  ], asyncHandler(async (req: any, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid input data', errors.array());
     }
-  });
+
+    const updates = req.body;
+    const user = await storage.updateUser(req.user.id, updates);
+    sendSuccess(res, { user }, HTTP_STATUS.OK, req.id);
+  }));
 
   // Department routes
-  app.get('/api/departments', requireAuth, async (req, res) => {
-    try {
-      const departments = await storage.getDepartments();
-      res.json({ departments });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch departments' });
-    }
-  });
+  app.get('/api/departments', requireAuth, asyncHandler(async (req: any, res: Response) => {
+    const departments = await storage.getDepartments();
+    sendSuccess(res, { departments }, HTTP_STATUS.OK, req.id);
+  }));
 
   app.post('/api/departments', strictLimiter, requireAuth, [
     body('name').trim().escape().isLength({ min: 1, max: 100 }).withMessage('Department name must be 1-100 characters'),
     body('description').optional().trim().escape().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters')
-  ], async (req: any, res) => {
-    try {
-      // Check if user is admin
-      if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const department = await storage.createDepartment(req.body);
-      res.status(201).json({ department });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to create department' });
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      throw createError.forbidden('Administrator access required to create departments');
     }
-  });
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid department data', errors.array());
+    }
+
+    const department = await storage.createDepartment(req.body);
+    sendSuccess(res, { department }, HTTP_STATUS.CREATED, req.id);
+  }));
 
   // Shift routes
-  app.get('/api/shifts', requireAuth, async (req: any, res) => {
-    try {
-      const { status, department_id, start_date, end_date } = req.query;
-      const filters: any = {};
-      
-      if (status) filters.status = status as string;
-      if (department_id) filters.department_id = department_id as string;
-      if (start_date) filters.start_date = new Date(start_date as string);
-      if (end_date) filters.end_date = new Date(end_date as string);
+  app.get('/api/shifts', requireAuth, asyncHandler(async (req: any, res: Response) => {
+    const { status, department_id, start_date, end_date } = req.query;
+    const filters: any = {};
+    
+    if (status) filters.status = status as string;
+    if (department_id) filters.department_id = department_id as string;
+    if (start_date) filters.start_date = new Date(start_date as string);
+    if (end_date) filters.end_date = new Date(end_date as string);
 
-      const shifts = await storage.getShifts(filters);
-      res.json({ shifts });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch shifts' });
-    }
-  });
+    const shifts = await storage.getShifts(filters);
+    sendSuccess(res, { shifts }, HTTP_STATUS.OK, req.id);
+  }));
 
   app.post('/api/shifts', requireAuth, [
     body('title').trim().escape().isLength({ min: 1, max: 200 }).withMessage('Title must be 1-200 characters'),
@@ -350,80 +338,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return true;
     }).withMessage('Skills must be strings with max 50 characters each'),
     body('min_experience_years').optional().isInt({ min: 0, max: 50 }).withMessage('Experience must be 0-50 years')
-  ], async (req: any, res) => {
-    try {
-      // Check if user can create shifts (admin or supervisor)
-      if (!['admin', 'supervisor'].includes(req.user.role)) {
-        return res.status(403).json({ error: 'Insufficient permissions' });
-      }
-
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const shiftData = {
-        ...req.body,
-        created_by: req.user.id,
-        start_time: new Date(req.body.start_time),
-        end_time: new Date(req.body.end_time)
-      };
-
-      const shift = await storage.createShift(shiftData);
-
-      // Add eligible staff to FCFS queue
-      const eligibleUsers = await storage.getEligibleUsersForShift(shift);
-      
-      // Calculate response deadline (e.g., 24 hours from now)
-      const responseDeadline = new Date();
-      responseDeadline.setHours(responseDeadline.getHours() + 24);
-      
-      // Add each eligible user to FCFS queue with calculated priority scores
-      for (const user of eligibleUsers) {
-        const priorityScore = calculateFCFSScore(user, shift);
-        
-        await storage.addToFcfsQueue({
-          shift_id: shift.id,
-          user_id: user.id,
-          priority_score: priorityScore,
-          response_deadline: responseDeadline,
-          status: 'pending'
-        });
-        
-        // Create notification for the user
-        await storage.createNotification({
-          user_id: user.id,
-          type: 'shift_assignment',
-          title: 'New Shift Available',
-          message: `You have been assigned to the FCFS queue for shift: ${shift.title}`,
-          data: { shift_id: shift.id },
-          is_read: false
-        });
-      }
-      
-      // Update shift status to indicate it's in queue
-      await storage.updateShift(shift.id, { status: 'in_queue' });
-      
-      // Create audit log
-      await storage.createAuditLog({
-        user_id: req.user.id,
-        action: 'CREATE_SHIFT',
-        resource_type: 'shift',
-        resource_id: shift.id,
-        details: { shift_title: shift.title }
-      });
-
-      // Broadcast to connected clients
-      broadcast({
-        type: 'shift_created',
-        shift
-      });
-
-      res.status(201).json({ shift });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to create shift' });
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user can create shifts (admin or supervisor)
+    if (!['admin', 'supervisor'].includes(req.user.role)) {
+      throw createError.forbidden('Administrator or supervisor access required to create shifts');
     }
-  });
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid shift data', errors.array());
+    }
+
+    const shiftData = {
+      ...req.body,
+      created_by: req.user.id,
+      start_time: new Date(req.body.start_time),
+      end_time: new Date(req.body.end_time)
+    };
+
+    const shift = await storage.createShift(shiftData);
+
+    // Add eligible staff to FCFS queue
+    const eligibleUsers = await storage.getEligibleUsersForShift(shift);
+    
+    // Calculate response deadline (e.g., 24 hours from now)
+    const responseDeadline = new Date();
+    responseDeadline.setHours(responseDeadline.getHours() + 24);
+    
+    // Add each eligible user to FCFS queue with calculated priority scores
+    for (const user of eligibleUsers) {
+      const priorityScore = calculateFCFSScore(user, shift);
+      
+      await storage.addToFcfsQueue({
+        shift_id: shift.id,
+        user_id: user.id,
+        priority_score: priorityScore,
+        response_deadline: responseDeadline,
+        status: 'pending'
+      });
+      
+      // Create notification for the user
+      await storage.createNotification({
+        user_id: user.id,
+        type: 'shift_assignment',
+        title: 'New Shift Available',
+        message: `You have been assigned to the FCFS queue for shift: ${shift.title}`,
+        data: { shift_id: shift.id },
+        is_read: false
+      });
+    }
+    
+    // Update shift status to indicate it's in queue
+    await storage.updateShift(shift.id, { status: 'in_queue' });
+    
+    // Create audit log
+    await storage.createAuditLog({
+      user_id: req.user.id,
+      action: 'CREATE_SHIFT',
+      resource_type: 'shift',
+      resource_id: shift.id,
+      details: { shift_title: shift.title }
+    });
+
+    // Broadcast to connected clients
+    broadcast({
+      type: 'shift_created',
+      shift
+    });
+
+    sendSuccess(res, { shift }, HTTP_STATUS.CREATED, req.id);
+  }));
 
   // FCFS Queue routes
   app.get('/api/fcfs-queue', requireAuth, async (req: any, res) => {
