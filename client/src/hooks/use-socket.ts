@@ -45,6 +45,8 @@ export function useSocket() {
   return {
     isConnected,
     lastMessage,
-    sendMessage
+    sendMessage,
+    on: (event: string, listener: (data: any) => void) => socketManager.on(event, listener),
+    off: (event: string, listener: (data: any) => void) => socketManager.off(event, listener)
   };
 }
