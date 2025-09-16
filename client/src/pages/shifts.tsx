@@ -30,7 +30,7 @@ export default function Shifts() {
 
   const { data: shifts, isLoading } = useQuery({
     queryKey: ["/api/shifts"],
-    select: (data) => {
+    select: (data: any) => {
       const shiftsData = data?.data?.shifts || data?.shifts || [];
       return Array.isArray(shiftsData) ? shiftsData : Object.values(shiftsData);
     }
@@ -38,7 +38,7 @@ export default function Shifts() {
 
   const { data: departments } = useQuery({
     queryKey: ["/api/departments"],
-    select: (data) => {
+    select: (data: any) => {
       const deps = data?.data?.departments || data?.departments || [];
       return Array.isArray(deps) ? deps : Object.values(deps);
     }

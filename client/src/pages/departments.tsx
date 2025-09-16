@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Building, Users, Plus } from "lucide-react";
+import { Building, Users, Plus, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -15,6 +15,7 @@ export default function Departments() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: ""
@@ -22,7 +23,7 @@ export default function Departments() {
 
   const { data: departments, isLoading } = useQuery({
     queryKey: ["/api/departments"],
-    select: (data) => {
+    select: (data: any) => {
       const deps = data?.data?.departments || data?.departments || [];
       // Handle case where departments is returned as object with numeric keys
       if (deps && !Array.isArray(deps)) {
@@ -48,7 +49,7 @@ export default function Departments() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       setIsCreateDialogOpen(false);
-      setFormData({ name: "", description: "" });
+      resetForm();
     },
     onError: (error: Error) => {
       toast({
@@ -59,16 +60,63 @@ export default function Departments() {
     },
   });
 
+  const updateDepartmentMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest("PUT", `/api/departments/${id}`, data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      toast({
+        title: "Department updated",
+        description: "The department has been updated successfully.",
+      });
+      setEditingDepartment(null);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update department",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: ""
+    });
+  };
+
+  const handleEdit = (department: any) => {
+    setFormData({
+      name: department.name,
+      description: department.description || ""
+    });
+    setEditingDepartment(department);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createDepartmentMutation.mutate(formData);
+    if (editingDepartment) {
+      updateDepartmentMutation.mutate({
+        id: editingDepartment.id,
+        data: formData
+      });
+    } else {
+      createDepartmentMutation.mutate(formData);
+    }
   };
+
+  const isAdmin = user?.role === 'admin';
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-4 md:p-6">
         <h1 className="text-2xl font-bold mb-6">Departments</h1>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader>
@@ -83,14 +131,14 @@ export default function Departments() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4 md:p-6">
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold" data-testid="page-title-departments">Departments</h1>
             <p className="text-muted-foreground">Hospital departments and divisions</p>
           </div>
-          {user?.role === 'admin' && (
+          {isAdmin && (
             <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-add-department">
               <Plus className="mr-2 h-4 w-4" />
               Add Department
@@ -98,15 +146,27 @@ export default function Departments() {
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {departments && departments.length > 0 ? (
             departments.map((dept: any) => (
               <Card key={dept.id} data-testid={`card-department-${dept.id}`}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    {dept.name}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Building className="h-5 w-5" />
+                      {dept.name}
+                    </CardTitle>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(dept)}
+                        data-testid={`button-edit-department-${dept.id}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   <CardDescription>{dept.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -134,7 +194,7 @@ export default function Departments() {
       </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create New Department</DialogTitle>
             <DialogDescription>
@@ -175,6 +235,51 @@ export default function Departments() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {editingDepartment && (
+        <Dialog open={!!editingDepartment} onOpenChange={() => setEditingDepartment(null)}>
+          <DialogContent className="max-w-[95vw] sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Department</DialogTitle>
+              <DialogDescription>
+                Update department information
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Department Name</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g. Emergency Department"
+                  required
+                  data-testid="input-edit-department-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of the department"
+                  rows={3}
+                  data-testid="input-edit-department-description"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditingDepartment(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateDepartmentMutation.isPending}>
+                  {updateDepartmentMutation.isPending ? "Updating..." : "Update Department"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

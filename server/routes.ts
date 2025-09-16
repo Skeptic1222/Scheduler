@@ -373,6 +373,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sendSuccess(res, { department }, HTTP_STATUS.CREATED, req.id);
   }));
 
+  app.put('/api/departments/:id', requireAuth, [
+    body('name').optional().trim().escape().isLength({ min: 1, max: 100 }).withMessage('Department name must be 1-100 characters'),
+    body('description').optional().trim().escape().isLength({ max: 500 }).withMessage('Description cannot exceed 500 characters')
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      throw createError.forbidden('Administrator access required to update departments');
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid department data', errors.array());
+    }
+
+    const department = await storage.updateDepartment(req.params.id, req.body);
+    if (!department) {
+      throw createError.notFound('Department not found');
+    }
+
+    sendSuccess(res, { department }, HTTP_STATUS.OK, req.id);
+  }));
+
   // Shift routes
   app.get('/api/shifts', requireAuth, asyncHandler(async (req: any, res: Response) => {
     const { status, department_id, start_date, end_date } = req.query;
