@@ -6,6 +6,9 @@ import { StatusCard } from "@/components/ui/status-card";
 import { FCFSQueue } from "@/components/fcfs-queue";
 import { ShiftForm } from "@/components/shift-form";
 import { ShiftsTable } from "@/components/shifts-table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Users, MapPin, Calendar } from "lucide-react";
 import { useSocket } from "@/hooks/use-socket";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
@@ -21,7 +24,7 @@ export default function Dashboard() {
   // Fetch dashboard data
   const { data: shiftsData, isLoading: shiftsLoading } = useQuery({
     queryKey: ["/api/shifts"],
-    select: (data) => data.shifts || []
+    select: (data) => data?.data?.shifts || data?.shifts || []
   });
 
   const { data: fcfsData, isLoading: fcfsLoading } = useQuery({
@@ -64,6 +67,14 @@ export default function Dashboard() {
   const availableShifts = shiftsData?.filter((shift: any) => shift.status === 'available') || [];
   const activeQueue = fcfsData?.filter((entry: any) => entry.status === 'pending') || [];
   const unreadNotifications = notificationsData?.length || 0;
+  
+  // Get current shifts (shifts currently in progress)
+  const currentShifts = shiftsData?.filter((shift: any) => {
+    const now = new Date();
+    const start = new Date(shift.start_time);
+    const end = new Date(shift.end_time);
+    return now >= start && now <= end && shift.status === 'assigned';
+  }) || [];
 
   return (
     <>
@@ -134,6 +145,63 @@ export default function Dashboard() {
                 status="success"
                 data-testid="card-auth-status"
               />
+            </div>
+
+            {/* Current Active Shifts */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Current Active Shifts</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {currentShifts.length > 0 ? (
+                  currentShifts.map((shift: any) => (
+                    <Card key={shift.id} data-testid={`card-current-shift-${shift.id}`}>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">{shift.title}</CardTitle>
+                          <Badge variant="default" className="bg-green-500">
+                            <Clock className="mr-1 h-3 w-3" />
+                            Active
+                          </Badge>
+                        </div>
+                        <CardDescription className="flex items-center text-xs">
+                          <MapPin className="mr-1 h-3 w-3" />
+                          {shift.department?.name || 'Department'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm">
+                            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <span>{shift.assigned_to?.name || 'Staff Member'}</span>
+                          </div>
+                          <div className="flex items-center text-sm">
+                            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <span>
+                              {new Date(shift.start_time).toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })} - 
+                              {new Date(shift.end_time).toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <Card className="col-span-full">
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                      <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Active Shifts</h3>
+                      <p className="text-muted-foreground text-center">
+                        There are no shifts currently in progress.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
 
             {/* FCFS Queue Management */}
