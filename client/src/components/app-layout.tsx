@@ -39,7 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       
       <div className="flex">
         <Sidebar 
-          userRole={user?.role || 'admin'}
+          userRole={user?.role || 'staff'}
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
         />

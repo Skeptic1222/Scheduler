@@ -2,13 +2,92 @@
 
 ## Overview
 
-This is a full-stack hospital shift scheduling application built with a React frontend and Express backend. The system implements a First Come First Served (FCFS) queue mechanism for distributing hospital shifts fairly among staff members. It features real-time updates via WebSockets, comprehensive role-based access control, and HIPAA-compliant audit logging.
+A comprehensive hospital shift scheduling application with First Come First Served (FCFS) queue distribution, built for healthcare institutions requiring efficient, fair, and compliant staff scheduling. The system features real-time updates, role-based access control, and HIPAA-compliant audit logging.
 
-The application serves healthcare institutions that need to manage shift assignments efficiently while ensuring fair distribution based on seniority, skills, and availability. Staff can view available shifts, join queues, and receive real-time notifications when shifts become available.
+**Key Features:**
+- 🏥 Complete staff management with department assignments
+- 📅 Advanced shift scheduling with skills and experience matching  
+- 🔄 Real-time WebSocket updates for instant notifications
+- 🔒 Role-based access control (Admin/Supervisor/Staff)
+- 📱 Fully responsive mobile-first design
+- 🚨 On-call staff tracking and emergency paging
+- 📊 Live dashboard with system health monitoring
+- 🔐 HIPAA-compliant audit logging with PHI/PII protection
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Current Functionality
+
+### Staff Management
+- **Create New Staff**: Admins can add new staff members with name, email, role, department, and experience
+- **Edit Staff Information**: Update staff details including role assignments and department transfers  
+- **View Staff Directory**: Browse all hospital staff with filtering by department and role
+- **Department Assignment**: Assign staff to specific departments for shift eligibility
+
+### Shift Scheduling
+- **Create Shifts**: Supervisors and admins can create shifts with requirements:
+  - Department assignment
+  - Required skills and minimum experience
+  - Start and end times
+  - Detailed descriptions
+- **FCFS Queue Distribution**: Fair shift assignment based on priority scoring
+- **View Available Shifts**: Staff can browse all available shifts
+- **Shift Status Tracking**: Real-time status updates (available, assigned, completed)
+
+### On-Call Management  
+- **Current On-Call View**: See who's currently on call with contact information
+- **Emergency Paging**: Quick access to page on-call staff
+- **Department Coverage**: Track on-call coverage by department
+- **Shift Handoffs**: Smooth transitions between on-call periods
+
+### Dashboard & Monitoring
+- **System Health**: Real-time database status and connection monitoring
+- **Active Shifts**: Current shift assignments and staff coverage
+- **FCFS Queue Status**: Pending assignments and queue depth
+- **WebSocket Connections**: Real-time update status
+
+### Security & Compliance
+- **Google OAuth**: Secure authentication with automatic user creation
+- **Role-Based Access**: Three-tier permission system (Admin/Supervisor/Staff)
+- **HIPAA Audit Logs**: Compliant activity tracking with PHI/PII redaction
+- **Rate Limiting**: Protection against brute force attacks
+
+## Planned Functionality
+
+### Enhanced Scheduling Features
+- **Shift Swapping**: Allow staff to request and approve shift swaps
+- **Recurring Shifts**: Template-based scheduling for regular patterns
+- **Vacation/Leave Management**: Integration with time-off requests
+- **Automated Notifications**: SMS/Email alerts for shift reminders
+- **Conflict Detection**: Prevent double-booking and overtime violations
+
+### Advanced Queue Management
+- **Priority Overrides**: Emergency staffing capabilities
+- **Skills Matching Algorithm**: Intelligent staff-to-shift matching
+- **Fairness Analytics**: Track and ensure equitable distribution
+- **Queue Position Visibility**: Staff can see their position in FCFS queue
+
+### Reporting & Analytics
+- **Shift Coverage Reports**: Historical coverage analysis
+- **Staff Utilization Metrics**: Hours worked, overtime tracking
+- **Department Performance**: Shift fulfillment rates by department
+- **Compliance Reports**: HIPAA audit trail exports
+- **Custom Report Builder**: Create tailored reports for administration
+
+### Mobile Enhancements
+- **Progressive Web App**: Offline capability and app-like experience
+- **Push Notifications**: Native mobile notifications for shift updates
+- **Touch-Optimized UI**: Enhanced mobile interaction patterns
+- **Biometric Authentication**: Face ID/Touch ID support
+
+### Integration Capabilities
+- **HR System Integration**: Sync with existing HR platforms
+- **Payroll Export**: Automated timesheet generation
+- **Calendar Sync**: Integration with Google/Outlook calendars
+- **Third-Party Messaging**: Slack/Teams notifications
+- **API Access**: RESTful API for custom integrations
 
 ## System Architecture
 
@@ -60,6 +139,23 @@ Preferred communication style: Simple, everyday language.
 - **Type Checking**: TypeScript with strict configuration across frontend and backend
 - **Code Quality**: ESLint and Prettier integration (configured via components.json)
 - **Development Experience**: Hot module replacement and runtime error overlays
+
+## Recent Updates
+
+### Latest Features (Current Session)
+- ✅ Fixed navigation highlighting for Create Shifts button
+- ✅ Added comprehensive Staff Management with CRUD operations
+- ✅ Enhanced mobile responsiveness across all pages
+- ✅ Implemented role-based access for staff creation/editing
+- ✅ Added department assignment capabilities for staff
+- ✅ Improved data handling for consistent API responses
+
+### Previous Updates
+- Added On-Call section with current staff tracking
+- Implemented real-time dashboard with active shifts view
+- Fixed admin panel integration issues
+- Standardized API response format across endpoints
+- Added development admin user for testing
 
 ## External Dependencies
 
