@@ -21,7 +21,7 @@ export default function Staff() {
     name: "",
     email: "",
     role: "staff",
-    department_id: "",
+    department_id: "none",
     seniority_years: "0"
   });
 
@@ -92,7 +92,7 @@ export default function Staff() {
       name: "",
       email: "",
       role: "staff",
-      department_id: "",
+      department_id: "none",
       seniority_years: "0"
     });
   };
@@ -101,6 +101,7 @@ export default function Staff() {
     e.preventDefault();
     const submitData = {
       ...formData,
+      department_id: formData.department_id === "none" ? null : formData.department_id,
       seniority_years: parseInt(formData.seniority_years, 10),
       skills: []
     };
@@ -117,7 +118,7 @@ export default function Staff() {
       name: member.name,
       email: member.email,
       role: member.role,
-      department_id: member.department_id || "",
+      department_id: member.department_id || "none",
       seniority_years: member.seniority_years?.toString() || "0"
     });
     setEditingUser(member);
@@ -214,7 +215,7 @@ export default function Staff() {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No Department</SelectItem>
+                        <SelectItem value="none">No Department</SelectItem>
                         {departments?.map((dept: any) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}

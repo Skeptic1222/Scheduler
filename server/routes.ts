@@ -471,6 +471,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     sendSuccess(res, { shift }, HTTP_STATUS.CREATED, req.id);
   }));
 
+  // Update shift endpoint
+  app.put('/api/shifts/:id', requireAuth, [
+    body('title').optional().trim().escape().isLength({ min: 1, max: 200 }).withMessage('Title must be 1-200 characters'),
+    body('description').optional().trim().escape().isLength({ max: 1000 }).withMessage('Description cannot exceed 1000 characters'),
+    body('department_id').optional().isUUID().withMessage('Valid department ID required'),
+    body('start_time').optional().isISO8601().withMessage('Valid start time required'),
+    body('end_time').optional().isISO8601().withMessage('Valid end time required'),
+    body('required_skills').optional().isArray().custom((skills) => {
+      if (Array.isArray(skills)) {
+        return skills.every(skill => typeof skill === 'string' && skill.length <= 50);
+      }
+      return true;
+    }).withMessage('Skills must be strings with max 50 characters each'),
+    body('min_experience_years').optional().isInt({ min: 0, max: 50 }).withMessage('Experience must be 0-50 years')
+  ], asyncHandler(async (req: any, res: Response) => {
+    // Check if user can update shifts (admin or supervisor)
+    if (!['admin', 'supervisor'].includes(req.user.role)) {
+      throw createError.forbidden('Administrator or supervisor access required to update shifts');
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      throw createError.validationError('Invalid shift data', errors.array());
+    }
+
+    const { id } = req.params;
+    const updateData = { ...req.body };
+    
+    if (updateData.start_time) {
+      updateData.start_time = new Date(updateData.start_time);
+    }
+    if (updateData.end_time) {
+      updateData.end_time = new Date(updateData.end_time);
+    }
+
+    const shift = await storage.updateShift(id, updateData);
+    
+    if (!shift) {
+      throw createError.notFound('Shift not found');
+    }
+
+    // Create audit log
+    await storage.createAuditLog({
+      user_id: req.user.id,
+      action: 'UPDATE_SHIFT',
+      resource_type: 'shift',
+      resource_id: shift.id,
+      details: { shift_title: shift.title }
+    });
+
+    // Broadcast to connected clients
+    broadcast({
+      type: 'shift_updated',
+      shift
+    });
+
+    sendSuccess(res, { shift }, HTTP_STATUS.OK, req.id);
+  }));
+
   // FCFS Queue routes
   app.get('/api/fcfs-queue', requireAuth, async (req: any, res) => {
     try {
