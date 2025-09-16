@@ -30,7 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         throw new Error('Token verification failed');
       }
       const data = await response.json();
-      setUser(data.user);
+      // Handle both old and new response formats
+      const userData = data.data?.user || data.user;
+      setUser(userData);
       localStorage.setItem('auth_token', token);
     } catch (error) {
       console.error('Token verification failed:', error);
