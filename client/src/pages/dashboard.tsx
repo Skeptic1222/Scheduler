@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import { Header } from "@/components/header";
-import { Sidebar } from "@/components/sidebar";
 import { StatusCard } from "@/components/ui/status-card";
 import { FCFSQueue } from "@/components/fcfs-queue";
 import { ShiftForm } from "@/components/shift-form";
@@ -12,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 
 export default function Dashboard() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -68,50 +66,37 @@ export default function Dashboard() {
   const unreadNotifications = notificationsData?.length || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        user={user}
-        notificationCount={unreadNotifications}
-        databaseStatus={adminData?.database}
-        onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-      />
-      
-      <div className="flex">
-        <Sidebar 
-          userRole={user?.role || 'staff'}
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-        />
-        
-        <main className="flex-1 overflow-auto">
-          {/* Dashboard Header */}
-          <div className="p-6 border-b border-border bg-card">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Shift Management Dashboard</h1>
-                <p className="text-muted-foreground">Real-time FCFS distribution and staff scheduling</p>
-              </div>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                <button 
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 flex items-center space-x-2"
-                  data-testid="button-create-shift"
-                >
-                  <i className="fas fa-plus"></i>
-                  <span>Create Shift</span>
-                </button>
-                <button 
-                  className="bg-secondary text-secondary-foreground px-4 py-2 rounded-md font-medium hover:bg-secondary/90 flex items-center space-x-2"
-                  onClick={() => queryClient.invalidateQueries()}
-                  data-testid="button-refresh"
-                >
-                  <i className="fas fa-sync-alt"></i>
-                  <span>Refresh</span>
-                </button>
-              </div>
-            </div>
+    <>
+      {/* Dashboard Header */}
+      <div className="p-6 border-b border-border bg-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Shift Management Dashboard</h1>
+            <p className="text-muted-foreground">Real-time FCFS distribution and staff scheduling</p>
           </div>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+            <Link href="/shifts/create">
+              <button 
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 flex items-center space-x-2"
+                data-testid="button-create-shift"
+              >
+                <i className="fas fa-plus"></i>
+                <span>Create Shift</span>
+              </button>
+            </Link>
+            <button 
+              className="bg-secondary text-secondary-foreground px-4 py-2 rounded-md font-medium hover:bg-secondary/90 flex items-center space-x-2"
+              onClick={() => queryClient.invalidateQueries()}
+              data-testid="button-refresh"
+            >
+              <i className="fas fa-sync-alt"></i>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
-          <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6">
             {/* System Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatusCard
@@ -237,9 +222,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-          </div>
-        </main>
       </div>
-    </div>
+    </>
   );
 }

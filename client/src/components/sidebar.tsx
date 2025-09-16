@@ -62,25 +62,25 @@ export function Sidebar({ userRole, isOpen, onClose }: SidebarProps) {
             {section.items
               .filter(item => canAccess(item.roles))
               .map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <a
-                    className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
-                      isActive(item.href)
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                    onClick={onClose}
-                    data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <i className={`${item.icon} w-5`}></i>
-                    <span>{item.label}</span>
-                    {item.label === "FCFS Queue" && (
-                      <span className="ml-auto bg-warning text-warning-foreground text-xs px-2 py-1 rounded-full">
-                        3
-                      </span>
-                    )}
-                  </a>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                    isActive(item.href)
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                  onClick={onClose}
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <i className={`${item.icon} w-5`}></i>
+                  <span>{item.label}</span>
+                  {item.label === "FCFS Queue" && (
+                    <span className="ml-auto bg-warning text-warning-foreground text-xs px-2 py-1 rounded-full">
+                      3
+                    </span>
+                  )}
                 </Link>
               ))}
           </div>
