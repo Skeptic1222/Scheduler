@@ -24,7 +24,14 @@ export default function CreateShift() {
 
   const { data: departments } = useQuery({
     queryKey: ["/api/departments"],
-    select: (data) => data?.data?.departments || data?.departments || []
+    select: (data) => {
+      const deps = data?.data?.departments || data?.departments || [];
+      // Handle case where departments is returned as object with numeric keys
+      if (deps && !Array.isArray(deps)) {
+        return Object.values(deps);
+      }
+      return deps;
+    }
   });
 
   const createShiftMutation = useMutation({
