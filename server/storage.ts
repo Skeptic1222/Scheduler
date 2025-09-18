@@ -196,7 +196,7 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(fcfs_queue.user_id, user_id));
     }
 
-    const query = db
+    const results = await db
       .select({
         id: fcfs_queue.id,
         shift_id: fcfs_queue.shift_id,
@@ -206,19 +206,15 @@ export class DatabaseStorage implements IStorage {
         status: fcfs_queue.status,
         created_at: fcfs_queue.created_at,
         updated_at: fcfs_queue.updated_at,
-        shift: {
-          id: shifts.id,
-          title: shifts.title,
-          description: shifts.description,
-          start_time: shifts.start_time,
-          end_time: shifts.end_time,
-          status: shifts.status,
-          department: {
-            id: departments.id,
-            name: departments.name,
-            description: departments.description
-          }
-        }
+        shift_id_detail: shifts.id,
+        shift_title: shifts.title,
+        shift_description: shifts.description,
+        shift_start_time: shifts.start_time,
+        shift_end_time: shifts.end_time,
+        shift_status: shifts.status,
+        department_id: departments.id,
+        department_name: departments.name,
+        department_description: departments.description
       })
       .from(fcfs_queue)
       .leftJoin(shifts, eq(fcfs_queue.shift_id, shifts.id))
@@ -226,7 +222,30 @@ export class DatabaseStorage implements IStorage {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(fcfs_queue.priority_score), asc(fcfs_queue.created_at));
 
-    return await query;
+    // Transform flat results back to nested structure to maintain API contract
+    return results.map(row => ({
+      id: row.id,
+      shift_id: row.shift_id,
+      user_id: row.user_id,
+      priority_score: row.priority_score,
+      response_deadline: row.response_deadline,
+      status: row.status,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      shift: {
+        id: row.shift_id_detail,
+        title: row.shift_title,
+        description: row.shift_description,
+        start_time: row.shift_start_time,
+        end_time: row.shift_end_time,
+        status: row.shift_status,
+        department: {
+          id: row.department_id,
+          name: row.department_name,
+          description: row.department_description
+        }
+      }
+    }));
   }
 
   async addToFcfsQueue(entry: InsertFcfsQueue): Promise<FcfsQueue> {
@@ -247,19 +266,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserNotifications(user_id: string, unread_only = false): Promise<Notification[]> {
-    let query = db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.user_id, user_id));
-
+    const conditions = [eq(notifications.user_id, user_id)];
+    
     if (unread_only) {
-      query = query.where(and(
-        eq(notifications.user_id, user_id),
-        eq(notifications.is_read, false)
-      ));
+      conditions.push(eq(notifications.is_read, false));
     }
 
-    return await query.orderBy(desc(notifications.created_at));
+    const query = db
+      .select()
+      .from(notifications)
+      .where(and(...conditions))
+      .orderBy(desc(notifications.created_at));
+
+    return await query;
   }
 
   async createNotification(insertNotification: InsertNotification): Promise<Notification> {
