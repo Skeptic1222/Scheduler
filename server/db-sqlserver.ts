@@ -27,17 +27,32 @@ export class SQLServerAdapter extends BaseAdapter {
 
       // Configure authentication
       if (this.config.windowsAuth) {
+        // Windows Authentication requires proper domain credentials for NTLM
+        if (!this.config.username || !this.config.username.includes('\\')) {
+          throw new Error('Windows Authentication requires username in DOMAIN\\User format');
+        }
+        if (!this.config.password) {
+          throw new Error('Windows Authentication requires password for NTLM');
+        }
+        
+        const [domain, userName] = this.config.username.split('\\');
         sqlConfig.authentication = {
           type: 'ntlm',
           options: {
-            domain: '',
-            userName: this.config.username || '',
-            password: this.config.password || '',
+            domain: domain,
+            userName: userName,
+            password: this.config.password
           }
         };
+        // Remove user/password from root config when using NTLM
+        delete sqlConfig.user;
+        delete sqlConfig.password;
       } else if (this.config.username && this.config.password) {
+        // SQL Server authentication (recommended for production)
         sqlConfig.user = this.config.username;
         sqlConfig.password = this.config.password;
+      } else {
+        throw new Error('Database authentication not configured - set DB_USER/DB_PASSWORD or DB_WINDOWS_AUTH with domain credentials');
       }
 
       this.pool = new sql.ConnectionPool(sqlConfig);

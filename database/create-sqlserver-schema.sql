@@ -164,3 +164,5 @@ INSERT INTO departments (id, name, description) VALUES
 GO
 
 PRINT 'SQL Server schema created successfully for Hospital Scheduler';
+
+-- End of SQL script

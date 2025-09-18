@@ -107,13 +107,21 @@ echo ========================================
 if exist "web.config" (
     echo [SUCCESS] ✓ web.config exists
     
-    REM Check if web.config contains required IIS settings
-    findstr /i "iisnode" web.config >nul
+    REM Check if web.config contains required ARR proxy settings
+    findstr /i "localhost:5000" web.config >nul
     if !ERRORLEVEL! EQU 0 (
-        echo [SUCCESS] ✓ web.config contains iisnode configuration
+        echo [SUCCESS] ✓ web.config contains ARR reverse proxy configuration
     ) else (
-        echo [ERROR] ✗ web.config missing iisnode configuration
+        echo [ERROR] ✗ web.config missing ARR proxy configuration
         set /a ERROR_COUNT+=1
+    )
+    
+    REM Check for WebSocket support
+    findstr /i "webSocket.*enabled.*true" web.config >nul
+    if !ERRORLEVEL! EQU 0 (
+        echo [SUCCESS] ✓ web.config has WebSocket support enabled
+    ) else (
+        echo [WARNING] ⚠ WebSocket support may not be enabled
     )
 ) else (
     echo [ERROR] ✗ web.config not found - required for IIS deployment

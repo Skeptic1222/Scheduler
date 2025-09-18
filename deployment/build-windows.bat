@@ -165,6 +165,9 @@ if %ERRORLEVEL% NEQ 0 (
     set /a ERROR_COUNT+=1
 )
 
+echo [INFO] Note: For true Windows Authentication, consider installing msnodesqlv8
+echo [INFO] The current mssql driver supports Windows Auth but may require additional configuration
+
 echo.
 
 echo ========================================
