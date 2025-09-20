@@ -149,24 +149,12 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 
 echo ========================================
-echo Step 4: SQL Server Dependencies (Windows-specific)
+echo Step 4: Database Dependencies (PostgreSQL)
 echo ========================================
 
-echo [INFO] Installing SQL Server dependencies for Windows deployment...
-npm install mssql --force
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Failed to install mssql
-    set /a ERROR_COUNT+=1
-)
-
-npm install @types/mssql --save-dev --force
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Failed to install @types/mssql
-    set /a ERROR_COUNT+=1
-)
-
-echo [INFO] Note: For true Windows Authentication, consider installing msnodesqlv8
-echo [INFO] The current mssql driver supports Windows Auth but may require additional configuration
+echo [INFO] PostgreSQL dependencies are already included in the project
+echo [INFO] Using Drizzle ORM with standard PostgreSQL driver for connectivity
+echo [INFO] No additional database drivers needed for PostgreSQL deployment
 
 echo.
 
@@ -208,7 +196,7 @@ if exist "node_modules" (
 
 REM Verify critical files
 echo [INFO] Verifying critical dependencies...
-set "CRITICAL_DEPS=@vitejs/plugin-react vite esbuild typescript mssql"
+set "CRITICAL_DEPS=@vitejs/plugin-react vite esbuild typescript"
 for %%i in (%CRITICAL_DEPS%) do (
     if exist "node_modules\%%i" (
         echo [INFO] ✓ %%i installed successfully
@@ -258,9 +246,9 @@ if %ERRORLEVEL% EQU 0 (
     echo [WARNING] ⚠ URL Rewrite module may not be installed - download from Microsoft
 )
 
-REM Note about iisnode
-echo [INFO] Note: iisnode module is required for Node.js hosting in IIS
-echo [INFO] Download from: https://github.com/Azure/iisnode
+REM Note about ARR reverse proxy
+echo [INFO] Note: Application Request Routing (ARR) is required for reverse proxy hosting
+echo [INFO] The application runs as a Windows service and IIS proxies requests to it
 
 echo.
 
@@ -276,7 +264,7 @@ echo ^<?xml version="1.0" encoding="utf-8"?^>
 echo ^<configuration^>
 echo   ^<system.webServer^>
 echo     ^<handlers^>
-echo       ^<add name="iisnode" path="dist/index.js" verb="*" modules="iisnode" /^>
+echo       ARR reverse proxy rules automatically configured in web.config
 echo     ^</handlers^>
 echo     ^<rewrite^>
 echo       ^<rules^>

@@ -30,7 +30,7 @@ export class DatabaseFactory {
         ssl: process.env.DB_SSL === 'true'
       };
     } else {
-      // PostgreSQL (default for Replit)
+      // PostgreSQL (default for all deployments)
       return {
         type: 'postgresql',
         host: process.env.DB_HOST || 'localhost',

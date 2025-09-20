@@ -91,15 +91,13 @@ REM Set all required environment variables for the application
 nssm set "%SERVICE_NAME%" AppEnvironmentExtra ^
   "NODE_ENV=production" ^
   "PORT=5000" ^
-  "DB_TYPE=sqlserver" ^
+  "DB_TYPE=postgresql" ^
   "DB_HOST=localhost" ^
-  "DB_PORT=1433" ^
-  "DB_NAME=HospitalScheduler" ^
-  "DB_WINDOWS_AUTH=false" ^
-  "DB_USER=HospitalSchedulerApp" ^
+  "DB_PORT=5432" ^
+  "DB_NAME=hospital_scheduler" ^
+  "DB_USER=hospital_scheduler_user" ^
   "DB_PASSWORD=CHANGE-THIS-TO-YOUR-DB-PASSWORD" ^
   "DB_SSL=false" ^
-  "DB_TRUST_SERVER_CERTIFICATE=true" ^
   "BASE_URL=http://localhost" ^
   "CORS_ORIGIN=http://localhost" ^
   "ENABLE_WEBSOCKET=true" ^

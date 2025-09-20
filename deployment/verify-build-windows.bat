@@ -47,7 +47,7 @@ if exist "node_modules\@vitejs\plugin-react" (
     set /a ERROR_COUNT+=1
 )
 
-set "CRITICAL_DEPS=vite esbuild typescript mssql"
+set "CRITICAL_DEPS=vite esbuild typescript"
 for %%i in (%CRITICAL_DEPS%) do (
     if exist "node_modules\%%i" (
         echo [SUCCESS] ✓ %%i
@@ -57,10 +57,10 @@ for %%i in (%CRITICAL_DEPS%) do (
     )
 )
 
-if exist "node_modules\@types\mssql" (
-    echo [SUCCESS] ✓ @types/mssql
+if exist "node_modules\drizzle-orm" (
+    echo [SUCCESS] ✓ drizzle-orm (PostgreSQL ORM)
 ) else (
-    echo [ERROR] ✗ @types/mssql missing
+    echo [ERROR] ✗ drizzle-orm missing
     set /a ERROR_COUNT+=1
 )
 
@@ -131,20 +131,26 @@ if exist "web.config" (
 echo.
 
 echo ========================================
-echo Verification 5: SQL Server Readiness
+echo Verification 5: Database Readiness (PostgreSQL)
 echo ========================================
 
-if exist "database\create-sqlserver-schema.sql" (
-    echo [SUCCESS] ✓ SQL Server schema script exists
+if exist "shared\schema.ts" (
+    echo [SUCCESS] ✓ Database schema definitions exist
 ) else (
-    echo [ERROR] ✗ SQL Server schema script missing
+    echo [ERROR] ✗ Database schema definitions missing
     set /a ERROR_COUNT+=1
 )
 
-if exist "server\db-sqlserver.ts" (
-    echo [SUCCESS] ✓ SQL Server adapter exists
+if exist "drizzle.config.ts" (
+    echo [SUCCESS] ✓ Drizzle ORM configuration exists
 ) else (
-    echo [ERROR] ✗ SQL Server adapter missing
+    echo [WARNING] ⚠ Drizzle configuration not found - may need manual setup
+)
+
+if exist "server\db-postgresql.ts" (
+    echo [SUCCESS] ✓ PostgreSQL adapter exists
+) else (
+    echo [ERROR] ✗ PostgreSQL adapter missing
     set /a ERROR_COUNT+=1
 )
 
@@ -169,7 +175,8 @@ if exist "%SYSTEMROOT%" (
     REM Note about required IIS modules
     echo [INFO] Required IIS modules for deployment:
     echo   - URL Rewrite Module (Microsoft download)
-    echo   - iisnode (https://github.com/Azure/iisnode)
+    echo   - Application Request Routing (ARR) Module
+    echo   - WebSocket support
 ) else (
     echo [INFO] Not running on Windows - IIS checks skipped
 )
@@ -199,13 +206,14 @@ if %ERROR_COUNT% EQU 0 (
     echo.
     echo Next deployment steps:
     echo 1. Copy all files to C:\inetpub\wwwroot\scheduler\
-    echo 2. Configure .env with SQL Server Express settings:
-    echo    DB_TYPE=sqlserver
+    echo 2. Configure .env with PostgreSQL settings:
+    echo    DB_TYPE=postgresql
     echo    DB_HOST=localhost
-    echo    DB_NAME=HospitalScheduler
-    echo    DB_WINDOWS_AUTH=true
-    echo 3. Run database\create-sqlserver-schema.sql on SQL Server Express
-    echo 4. Install and configure iisnode in IIS
+    echo    DB_PORT=5432
+    echo    DB_NAME=hospital_scheduler
+    echo 3. Run 'npm run db:push' to create PostgreSQL database schema
+    echo 4. Create Windows service via deployment\create-windows-service.bat
+    echo 5. Enable ARR proxy at server level in IIS Manager
     echo 5. Configure application pool for Node.js
     echo.
     exit /b 0

@@ -1,12 +1,12 @@
 # Hospital Scheduler - Windows Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Hospital Scheduler application to Windows Server 2022 with IIS and SQL Server Express, specifically addressing the issues identified in the deployment request document.
+This guide provides step-by-step instructions for deploying the Hospital Scheduler application to Windows Server 2022 with IIS and PostgreSQL, specifically addressing the issues identified in the deployment request document.
 
 ## Overview
 
 This deployment package addresses the critical issues identified in the deployment request:
 - ✅ **npm dependency installation problems (927 vs 760 packages)**
-- ✅ **Database abstraction for SQL Server Express support**
+- ✅ **Database abstraction for PostgreSQL support**
 - ✅ **IIS configuration with proper Node.js hosting**
 - ✅ **Windows-specific build scripts and verification**
 - ✅ **Environment configuration templates**
@@ -23,10 +23,10 @@ This deployment package addresses the critical issues identified in the deployme
    - Download from: https://nodejs.org/
    - Verify installation: `node --version`
 
-2. **SQL Server Express 2022**
-   - Download from: https://www.microsoft.com/en-us/sql-server/sql-server-downloads
-   - Enable Mixed Mode Authentication
-   - Enable TCP/IP protocol in SQL Server Configuration Manager
+2. **PostgreSQL 16+**
+   - Download from: https://www.postgresql.org/download/windows/
+   - Install with default settings including pgAdmin
+   - Ensure PostgreSQL service starts automatically
 
 3. **IIS with Required Modules**
    - Enable IIS via Windows Features or Server Manager
@@ -61,20 +61,23 @@ This deployment package addresses the critical issues identified in the deployme
 
 ### Step 2: Database Setup
 
-1. **Create the SQL Server database**
-   - Open SQL Server Management Studio (SSMS)
-   - Connect to your SQL Server Express instance
-   - Open `database\create-sqlserver-schema.sql`
-   - Execute the script to create the database and tables
+1. **Create PostgreSQL database and user**
+   - Open pgAdmin or use psql command line
+   - Create a new database: `hospital_scheduler`
+   - Create a new user: `hospital_scheduler_user`
+   - Grant all privileges on the database to the user
 
-2. **Configure database permissions**
    ```sql
-   -- If using Windows Authentication (recommended)
-   USE HospitalScheduler;
-   CREATE USER [IIS_IUSRS] FOR LOGIN [IIS_IUSRS];
-   ALTER ROLE db_datareader ADD MEMBER [IIS_IUSRS];
-   ALTER ROLE db_datawriter ADD MEMBER [IIS_IUSRS];
-   ALTER ROLE db_ddladmin ADD MEMBER [IIS_IUSRS];
+   -- In psql or pgAdmin SQL editor
+   CREATE DATABASE hospital_scheduler;
+   CREATE USER hospital_scheduler_user WITH PASSWORD 'your-secure-password';
+   GRANT ALL PRIVILEGES ON DATABASE hospital_scheduler TO hospital_scheduler_user;
+   ```
+
+2. **Initialize database schema**
+   ```cmd
+   REM Use Drizzle to create the schema
+   npm run db:push
    ```
 
 ### Step 3: Deploy Application Files
@@ -170,11 +173,11 @@ This deployment package addresses the critical issues identified in the deployme
    nssm set HospitalScheduler AppEnvironmentExtra ^
      "NODE_ENV=production" ^
      "PORT=5000" ^
-     "DB_TYPE=sqlserver" ^
+     "DB_TYPE=postgresql" ^
      "DB_HOST=localhost" ^
-     "DB_NAME=HospitalScheduler" ^
-     "DB_WINDOWS_AUTH=false" ^
-     "DB_USER=HospitalSchedulerApp" ^
+     "DB_PORT=5432" ^
+     "DB_NAME=hospital_scheduler" ^
+     "DB_USER=hospital_scheduler_user" ^
      "DB_PASSWORD=your-database-password" ^
      "SESSION_SECRET=your-secure-session-secret"
    
@@ -289,7 +292,7 @@ cd /mnt/c/inetpub/wwwroot/scheduler
 
 ### Production Security Checklist
 - [ ] Change default session secret in .env
-- [ ] Configure proper SQL Server authentication
+- [ ] Configure proper PostgreSQL authentication
 - [ ] Enable HTTPS with SSL certificates
 - [ ] Configure Windows Firewall rules
 - [ ] Regular security updates for all components
@@ -306,8 +309,7 @@ ENABLE_RATE_LIMITING=true
 ENABLE_AUDIT_LOGGING=true
 
 # Database security
-DB_SSL=true
-DB_WINDOWS_AUTH=true
+DB_SSL=false
 ```
 
 ## Performance Optimization
@@ -318,11 +320,11 @@ DB_WINDOWS_AUTH=true
 - Optimize Application Pool settings
 - Monitor performance counters
 
-### SQL Server Tuning
-- Configure appropriate memory settings
+### PostgreSQL Tuning
+- Configure appropriate memory settings in postgresql.conf
 - Set up database maintenance plans
-- Monitor query performance
-- Configure backup strategies
+- Monitor query performance with pg_stat_statements
+- Configure backup strategies with pg_dump
 
 ## Support and Maintenance
 
