@@ -330,7 +330,10 @@ export default function OnCall() {
                       className="pr-10"
                       data-testid="input-on-call-start"
                     />
-                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Calendar 
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
+                      onClick={() => document.getElementById('start')?.focus()}
+                    />
                   </div>
                 </div>
                 <div>
@@ -345,7 +348,10 @@ export default function OnCall() {
                       className="pr-10"
                       data-testid="input-on-call-end"
                     />
-                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Calendar 
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
+                      onClick={() => document.getElementById('end')?.focus()}
+                    />
                   </div>
                 </div>
               </div>
