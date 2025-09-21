@@ -336,7 +336,13 @@ export default function OnCall() {
                         const input = document.getElementById('start') as HTMLInputElement;
                         if (input) {
                           input.focus();
-                          input.showPicker?.();
+                          // Trigger a click event to open the native date picker
+                          const clickEvent = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true,
+                          });
+                          input.dispatchEvent(clickEvent);
                         }
                       }}
                     />
@@ -360,7 +366,13 @@ export default function OnCall() {
                         const input = document.getElementById('end') as HTMLInputElement;
                         if (input) {
                           input.focus();
-                          input.showPicker?.();
+                          // Trigger a click event to open the native date picker
+                          const clickEvent = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true,
+                          });
+                          input.dispatchEvent(clickEvent);
                         }
                       }}
                     />
