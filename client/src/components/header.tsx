@@ -45,7 +45,7 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
             </Button>
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <i className="fas fa-hospital text-primary-foreground"></i>
+                <span className="text-white font-bold text-lg">H</span>
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-foreground">Hospital Scheduler</h1>
