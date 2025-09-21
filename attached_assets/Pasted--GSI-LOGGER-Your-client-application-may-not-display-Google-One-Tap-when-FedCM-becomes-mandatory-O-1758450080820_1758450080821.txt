@@ -1,0 +1,27 @@
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+Google object available, prompting for sign in...
+[GSI_LOGGER]: Your client application may not display Google One Tap when FedCM becomes mandatory. Opt-in to FedCM to test that you have the proper cross-origin permission policy set up. Ignore this message if One Tap is displayed after opt-in to FedCM. Learn more: (https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#cross_origin)
+[GSI_LOGGER]: Check credential status returns invalid response.
+at t.value (https://7904873c-f04c-465f-8534-7f02ebec8c50-00-2rs4xnwizujsw.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://7904873c-f04c-465f-8534-7f02ebec8c50-00-2rs4xnwizujsw.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://7904873c-f04c-465f-8534-7f02ebec8c50-00-2rs4xnwizujsw.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://7904873c-f04c-465f-8534-7f02ebec8c50-00-2rs4xnwizujsw.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
