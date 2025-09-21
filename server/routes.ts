@@ -56,8 +56,8 @@ async function verifyGoogleToken(token: string): Promise<any> {
         throw new Error('Invalid token payload');
       }
 
-      // Verify the token is for our client ID (if we have it set)
-      if (process.env.GOOGLE_CLIENT_ID && data.aud && !data.aud.includes(process.env.GOOGLE_CLIENT_ID)) {
+      // Verify the token is for our client ID (if we have it set) - use strict equality for security
+      if (process.env.GOOGLE_CLIENT_ID && data.aud && data.aud !== process.env.GOOGLE_CLIENT_ID) {
         throw new Error('Invalid token audience');
       }
       
@@ -84,14 +84,15 @@ const requireAuth = asyncHandler(async (req: AuthenticatedRequest, res: Response
   
   if (!user) {
       // Create user if doesn't exist
-      const defaultRole = userData.email === 'admin@hospital.dev' ? 'admin' : 'staff';
+      // Only auto-promote admin@hospital.dev in development mode for security
+      const defaultRole = (process.env.NODE_ENV === 'development' && userData.email === 'admin@hospital.dev') ? 'admin' : 'staff';
       user = await storage.createUser({
         email: userData.email,
         name: userData.name,
         role: defaultRole
       });
-    } else if (userData.email === 'admin@hospital.dev' && user.role !== 'admin') {
-      // Update existing admin@hospital.dev user to have admin role
+    } else if (process.env.NODE_ENV === 'development' && userData.email === 'admin@hospital.dev' && user.role !== 'admin') {
+      // Update existing admin@hospital.dev user to have admin role (development only)
       user = await storage.updateUser(user.id, { role: 'admin' });
     }
 

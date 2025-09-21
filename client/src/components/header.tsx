@@ -127,7 +127,10 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
                       <button 
                         className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
                         data-testid="menu-admin"
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          window.location.href = '/admin';
+                        }}
                       >
                         <Shield className="mr-2 h-4 w-4" />
                         <span>Admin Panel</span>
@@ -139,7 +142,10 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
                   <button 
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
                     data-testid="menu-settings"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      alert('Settings page coming soon!');
+                    }}
                   >
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
@@ -148,7 +154,10 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
                   <button 
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
                     data-testid="menu-account"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      alert('Account & Billing page coming soon!');
+                    }}
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
                     <span>Account & Billing</span>
@@ -157,7 +166,10 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
                   <button 
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
                     data-testid="menu-profile"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      alert('Profile page coming soon!');
+                    }}
                   >
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
