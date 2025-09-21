@@ -40,9 +40,8 @@ export function ShiftCalendar({ shifts, className }: ShiftCalendarProps) {
     });
   };
 
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
+  const isSameDay = (date: Date, referenceDate: Date) => {
+    return date.toDateString() === referenceDate.toDateString();
   };
 
   const isSameWeek = (date: Date, referenceDate: Date) => {
@@ -64,7 +63,7 @@ export function ShiftCalendar({ shifts, className }: ShiftCalendarProps) {
       
       switch (view) {
         case 'today':
-          return isToday(shiftDate);
+          return isSameDay(shiftDate, currentDate);
         case 'week':
           return isSameWeek(shiftDate, currentDate);
         case 'month':
