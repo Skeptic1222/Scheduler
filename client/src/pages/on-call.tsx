@@ -320,25 +320,33 @@ export default function OnCall() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="start">Start Time</Label>
-                  <Input
-                    id="start"
-                    type="datetime-local"
-                    value={formData.start_time}
-                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                    required
-                    data-testid="input-on-call-start"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="start"
+                      type="datetime-local"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                      required
+                      className="pr-10"
+                      data-testid="input-on-call-start"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="end">End Time</Label>
-                  <Input
-                    id="end"
-                    type="datetime-local"
-                    value={formData.end_time}
-                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                    required
-                    data-testid="input-on-call-end"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="end"
+                      type="datetime-local"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                      required
+                      className="pr-10"
+                      data-testid="input-on-call-end"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
                 </div>
               </div>
               <Button type="submit" className="w-full" data-testid="button-submit-on-call">
