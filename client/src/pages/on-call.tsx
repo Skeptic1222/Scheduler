@@ -8,10 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Phone, Clock, User, Calendar, Plus, Edit } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useSocket } from "@/hooks/use-socket";
+import { format } from "date-fns";
 
 export default function OnCall() {
   const { user } = useAuth();
@@ -321,25 +324,123 @@ export default function OnCall() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start_time">Start Time</Label>
-                  <Input
-                    id="start_time"
-                    type="datetime-local"
-                    value={formData.start_time}
-                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                    required
-                    data-testid="input-on-call-start"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="start_time"
+                      type="datetime-local"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                      required
+                      className="pr-10"
+                      data-testid="input-on-call-start"
+                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3 space-y-3">
+                          <CalendarComponent
+                            mode="single"
+                            selected={formData.start_time ? new Date(formData.start_time) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                // Keep existing time or set to current time
+                                const currentTime = formData.start_time ? new Date(formData.start_time) : new Date();
+                                const newDateTime = new Date(date);
+                                newDateTime.setHours(currentTime.getHours(), currentTime.getMinutes());
+                                const isoString = format(newDateTime, "yyyy-MM-dd'T'HH:mm");
+                                setFormData({ ...formData, start_time: isoString });
+                              }
+                            }}
+                            initialFocus
+                          />
+                          <div className="border-t pt-3">
+                            <Label className="text-sm font-medium">Time</Label>
+                            <Input
+                              type="time"
+                              value={formData.start_time ? format(new Date(formData.start_time), "HH:mm") : ""}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  const currentDate = formData.start_time ? new Date(formData.start_time) : new Date();
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  currentDate.setHours(parseInt(hours), parseInt(minutes));
+                                  const isoString = format(currentDate, "yyyy-MM-dd'T'HH:mm");
+                                  setFormData({ ...formData, start_time: isoString });
+                                }
+                              }}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="end_time">End Time</Label>
-                  <Input
-                    id="end_time"
-                    type="datetime-local"
-                    value={formData.end_time}
-                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                    required
-                    data-testid="input-on-call-end"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="end_time"
+                      type="datetime-local"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                      required
+                      className="pr-10"
+                      data-testid="input-on-call-end"
+                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-3 space-y-3">
+                          <CalendarComponent
+                            mode="single"
+                            selected={formData.end_time ? new Date(formData.end_time) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                // Keep existing time or set to current time
+                                const currentTime = formData.end_time ? new Date(formData.end_time) : new Date();
+                                const newDateTime = new Date(date);
+                                newDateTime.setHours(currentTime.getHours(), currentTime.getMinutes());
+                                const isoString = format(newDateTime, "yyyy-MM-dd'T'HH:mm");
+                                setFormData({ ...formData, end_time: isoString });
+                              }
+                            }}
+                            initialFocus
+                          />
+                          <div className="border-t pt-3">
+                            <Label className="text-sm font-medium">Time</Label>
+                            <Input
+                              type="time"
+                              value={formData.end_time ? format(new Date(formData.end_time), "HH:mm") : ""}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  const currentDate = formData.end_time ? new Date(formData.end_time) : new Date();
+                                  const [hours, minutes] = e.target.value.split(':');
+                                  currentDate.setHours(parseInt(hours), parseInt(minutes));
+                                  const isoString = format(currentDate, "yyyy-MM-dd'T'HH:mm");
+                                  setFormData({ ...formData, end_time: isoString });
+                                }
+                              }}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
               <Button type="submit" className="w-full" data-testid="button-submit-on-call">
