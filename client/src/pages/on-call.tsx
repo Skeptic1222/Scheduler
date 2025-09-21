@@ -319,7 +319,10 @@ export default function OnCall() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start">Start Time</Label>
+                  <Label htmlFor="start" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Start Time
+                  </Label>
                   <Input
                     id="start"
                     type="datetime-local"
@@ -330,7 +333,10 @@ export default function OnCall() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end">End Time</Label>
+                  <Label htmlFor="end" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    End Time
+                  </Label>
                   <Input
                     id="end"
                     type="datetime-local"
