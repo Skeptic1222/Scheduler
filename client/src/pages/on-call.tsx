@@ -320,63 +320,25 @@ export default function OnCall() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="start">Start Time</Label>
-                  <div className="relative">
-                    <Input
-                      id="start"
-                      type="datetime-local"
-                      value={formData.start_time}
-                      onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                      required
-                      className="pr-10"
-                      data-testid="input-on-call-start"
-                    />
-                    <Calendar 
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
-                      onClick={() => {
-                        const input = document.getElementById('start') as HTMLInputElement;
-                        if (input) {
-                          input.focus();
-                          // Trigger a click event to open the native date picker
-                          const clickEvent = new MouseEvent('click', {
-                            view: window,
-                            bubbles: true,
-                            cancelable: true,
-                          });
-                          input.dispatchEvent(clickEvent);
-                        }
-                      }}
-                    />
-                  </div>
+                  <Input
+                    id="start"
+                    type="datetime-local"
+                    value={formData.start_time}
+                    onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+                    required
+                    data-testid="input-on-call-start"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="end">End Time</Label>
-                  <div className="relative">
-                    <Input
-                      id="end"
-                      type="datetime-local"
-                      value={formData.end_time}
-                      onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                      required
-                      className="pr-10"
-                      data-testid="input-on-call-end"
-                    />
-                    <Calendar 
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
-                      onClick={() => {
-                        const input = document.getElementById('end') as HTMLInputElement;
-                        if (input) {
-                          input.focus();
-                          // Trigger a click event to open the native date picker
-                          const clickEvent = new MouseEvent('click', {
-                            view: window,
-                            bubbles: true,
-                            cancelable: true,
-                          });
-                          input.dispatchEvent(clickEvent);
-                        }
-                      }}
-                    />
-                  </div>
+                  <Input
+                    id="end"
+                    type="datetime-local"
+                    value={formData.end_time}
+                    onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+                    required
+                    data-testid="input-on-call-end"
+                  />
                 </div>
               </div>
               <Button type="submit" className="w-full" data-testid="button-submit-on-call">
