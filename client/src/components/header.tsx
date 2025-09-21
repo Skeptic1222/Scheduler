@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth";
 import { ChevronDown, User, Settings, CreditCard, Shield, LogOut } from "lucide-react";
+import { useState } from "react";
 
 interface HeaderProps {
   user: any;
@@ -12,6 +13,7 @@ interface HeaderProps {
 
 export function Header({ user, notificationCount, databaseStatus, onMobileMenuToggle }: HeaderProps) {
   const { logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const getInitials = (name: string) => {
     return name
@@ -23,6 +25,7 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
 
   const handleSignOut = () => {
     logout();
+    setIsMenuOpen(false);
   };
 
   return (
@@ -87,75 +90,92 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
             </div>
 
             {/* User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center space-x-3 h-auto p-2 hover:bg-muted" 
-                  data-testid="button-user-menu"
-                >
-                  <div className="hidden sm:block text-right">
-                    <p className="text-sm font-medium" data-testid="text-user-name">
-                      {user?.name || 'User'}
-                    </p>
-                    <p className="text-xs text-muted-foreground" data-testid="text-user-role">
-                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Staff'}
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground text-sm font-medium" data-testid="text-user-initials">
-                      {user?.name ? getInitials(user.name) : 'U'}
-                    </span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48" data-testid="user-dropdown-menu">
-                <div className="px-2 py-1.5 text-sm font-medium">
-                  {user?.name || 'User'}
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center space-x-3 h-auto p-2 hover:bg-muted" 
+                data-testid="button-user-menu"
+              >
+                <div className="hidden sm:block text-right">
+                  <p className="text-sm font-medium" data-testid="text-user-name">
+                    {user?.name || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground" data-testid="text-user-role">
+                    {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Staff'}
+                  </p>
                 </div>
-                <div className="px-2 py-1 text-xs text-muted-foreground">
-                  {user?.email || ''}
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-primary-foreground text-sm font-medium" data-testid="text-user-initials">
+                    {user?.name ? getInitials(user.name) : 'U'}
+                  </span>
                 </div>
-                <DropdownMenuSeparator />
-                
-                {user?.role === 'admin' && (
-                  <>
-                    <DropdownMenuItem data-testid="menu-admin">
-                      <Shield className="mr-2 h-4 w-4" />
-                      <span>Admin Panel</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                
-                <DropdownMenuItem data-testid="menu-settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem data-testid="menu-account">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  <span>Account & Billing</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem data-testid="menu-profile">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                
-                <DropdownMenuItem 
-                  onClick={handleSignOut}
-                  className="text-destructive focus:text-destructive" 
-                  data-testid="menu-signout"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              
+              {isMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-50" data-testid="user-dropdown-menu">
+                  <div className="px-3 py-2 text-sm font-medium border-b border-border">
+                    {user?.name || 'User'}
+                  </div>
+                  <div className="px-3 py-1 text-xs text-muted-foreground border-b border-border">
+                    {user?.email || ''}
+                  </div>
+                  
+                  {user?.role === 'admin' && (
+                    <>
+                      <button 
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
+                        data-testid="menu-admin"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </button>
+                      <div className="border-t border-border" />
+                    </>
+                  )}
+                  
+                  <button 
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
+                    data-testid="menu-settings"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </button>
+                  
+                  <button 
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
+                    data-testid="menu-account"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Account & Billing</span>
+                  </button>
+                  
+                  <button 
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center"
+                    data-testid="menu-profile"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </button>
+                  
+                  <div className="border-t border-border" />
+                  
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center text-destructive"
+                    data-testid="menu-signout"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

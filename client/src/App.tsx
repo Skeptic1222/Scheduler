@@ -53,7 +53,25 @@ function LoginSplashPage() {
 
   const handleGoogleSignIn = () => {
     if (window.google) {
+      console.log('Google object available, prompting for sign in...');
       window.google.accounts.id.prompt();
+    } else {
+      console.error('Google object not available');
+      // Try to reload Google script
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.onload = () => {
+        if (window.google) {
+          window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            callback: handleGoogleResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
+          window.google.accounts.id.prompt();
+        }
+      };
+      document.head.appendChild(script);
     }
   };
 

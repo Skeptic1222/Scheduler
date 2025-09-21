@@ -55,6 +55,11 @@ async function verifyGoogleToken(token: string): Promise<any> {
       if (!data.email || !data.sub) {
         throw new Error('Invalid token payload');
       }
+
+      // Verify the token is for our client ID (if we have it set)
+      if (process.env.GOOGLE_CLIENT_ID && data.aud && !data.aud.includes(process.env.GOOGLE_CLIENT_ID)) {
+        throw new Error('Invalid token audience');
+      }
       
       return data;
     } catch (error) {
