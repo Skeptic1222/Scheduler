@@ -332,7 +332,13 @@ export default function OnCall() {
                     />
                     <Calendar 
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
-                      onClick={() => document.getElementById('start')?.focus()}
+                      onClick={() => {
+                        const input = document.getElementById('start') as HTMLInputElement;
+                        if (input) {
+                          input.focus();
+                          input.showPicker?.();
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -350,7 +356,13 @@ export default function OnCall() {
                     />
                     <Calendar 
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
-                      onClick={() => document.getElementById('end')?.focus()}
+                      onClick={() => {
+                        const input = document.getElementById('end') as HTMLInputElement;
+                        if (input) {
+                          input.focus();
+                          input.showPicker?.();
+                        }
+                      }}
                     />
                   </div>
                 </div>

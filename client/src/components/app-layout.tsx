@@ -45,7 +45,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsMobileMenuOpen(false)}
         />
         
-        <main className="flex-1 overflow-auto lg:ml-48 min-h-screen pb-16 md:pb-0">
+        <main className="flex-1 overflow-auto lg:ml-48 min-h-screen pb-16 md:pb-0 lg:px-4">
           <div className="w-full max-w-full">
             {children}
           </div>

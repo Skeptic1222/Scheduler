@@ -107,7 +107,7 @@ export function Sidebar({ userRole, isOpen, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-card border-r border-border shadow-sm hidden lg:block" data-testid="sidebar-desktop">
+      <aside className="w-48 bg-card border-r border-border shadow-sm hidden lg:block" data-testid="sidebar-desktop">
         {content}
       </aside>
 
