@@ -17,7 +17,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"], // unsafe-inline needed for styled components
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"], // unsafe-inline needed for styled components
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: isDevelopment 
         ? ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com"] // Dev needs unsafe-inline for Vite
