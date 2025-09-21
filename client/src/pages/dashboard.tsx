@@ -6,6 +6,7 @@ import { StatusCard } from "@/components/ui/status-card";
 import { FCFSQueue } from "@/components/fcfs-queue";
 import { ShiftForm } from "@/components/shift-form";
 import { ShiftsTable } from "@/components/shifts-table";
+import { ShiftCalendar } from "@/components/shift-calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, MapPin, Calendar } from "lucide-react";
@@ -79,11 +80,11 @@ export default function Dashboard() {
   return (
     <>
       {/* Dashboard Header */}
-      <div className="p-6 border-b border-border bg-card">
+      <div className="p-4 lg:p-6 border-b border-border bg-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Shift Management Dashboard</h1>
-            <p className="text-muted-foreground">Real-time FCFS distribution and staff scheduling</p>
+            <h1 className="text-xl lg:text-2xl font-bold text-foreground">Overview</h1>
+            <p className="text-muted-foreground">Today's schedule and shift management</p>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             <Link href="/shifts/create">
@@ -107,9 +108,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+            {/* Shift Calendar - Primary Feature */}
+            <ShiftCalendar 
+              shifts={shiftsData || []} 
+              className="" 
+            />
+
             {/* System Status Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
               <StatusCard
                 title="Database Status"
                 value={adminData?.database?.status === 'connected' ? 'Online' : 'Offline'}

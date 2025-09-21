@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
+import { MobileNav } from "@/components/mobile-nav";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 
@@ -44,12 +45,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           onClose={() => setIsMobileMenuOpen(false)}
         />
         
-        <main className="flex-1 overflow-auto lg:ml-64">
-          <div className="w-full">
+        <main className="flex-1 overflow-auto lg:ml-64 min-h-screen pb-16 md:pb-0">
+          <div className="w-full max-w-full">
             {children}
           </div>
         </main>
       </div>
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileNav userRole={user?.role || 'staff'} />
     </div>
   );
 }
