@@ -8,13 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Phone, Clock, User, Calendar, Plus, Edit } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useSocket } from "@/hooks/use-socket";
-import { format } from "date-fns";
 
 export default function OnCall() {
   const { user } = useAuth();
@@ -333,29 +330,21 @@ export default function OnCall() {
                       className="pr-10"
                       data-testid="input-on-call-start"
                     />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
-                        >
-                          <Calendar className="h-4 w-4" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={formData.start_time ? new Date(formData.start_time) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
-                              setFormData({ ...formData, start_time: isoString });
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => {
+                        const input = document.getElementById('start') as HTMLInputElement;
+                        if (input) {
+                          input.focus();
+                          if (input.showPicker) {
+                            input.showPicker();
+                          }
+                        }
+                      }}
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
                 <div>
@@ -370,29 +359,21 @@ export default function OnCall() {
                       className="pr-10"
                       data-testid="input-on-call-end"
                     />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
-                        >
-                          <Calendar className="h-4 w-4" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={formData.end_time ? new Date(formData.end_time) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              const isoString = format(date, "yyyy-MM-dd'T'HH:mm");
-                              setFormData({ ...formData, end_time: isoString });
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => {
+                        const input = document.getElementById('end') as HTMLInputElement;
+                        if (input) {
+                          input.focus();
+                          if (input.showPicker) {
+                            input.showPicker();
+                          }
+                        }
+                      }}
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </div>
