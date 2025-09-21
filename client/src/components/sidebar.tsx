@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 interface SidebarProps {
   userRole: string;
@@ -9,6 +10,12 @@ interface SidebarProps {
 
 export function Sidebar({ userRole, isOpen, onClose }: SidebarProps) {
   const [location] = useLocation();
+  
+  // Get FCFS queue count for the badge
+  const { data: fcfsQueue } = useQuery({
+    queryKey: ["/api/fcfs-queue"],
+    select: (data) => Array.isArray(data) ? data : []
+  });
 
   const navigationItems = [
     {
@@ -84,9 +91,9 @@ export function Sidebar({ userRole, isOpen, onClose }: SidebarProps) {
                 >
                   <i className={`${item.icon} w-5`}></i>
                   <span>{item.label}</span>
-                  {item.label === "FCFS Queue" && (
+                  {item.label === "FCFS Queue" && fcfsQueue && fcfsQueue.length > 0 && (
                     <span className="ml-auto bg-warning text-warning-foreground text-xs px-2 py-1 rounded-full">
-                      3
+                      {fcfsQueue.length}
                     </span>
                   )}
                 </Link>
