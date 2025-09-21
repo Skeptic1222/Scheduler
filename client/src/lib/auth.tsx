@@ -107,9 +107,15 @@ declare global {
 }
 
 // Google OAuth integration
-export function initializeGoogleAuth(): Promise<any> {
+export function initializeGoogleAuth(loginCallback: (token: string) => Promise<void>): Promise<any> {
   return new Promise((resolve, reject) => {
     if (typeof window !== 'undefined' && window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: (response: any) => handleCredentialResponse(response, loginCallback),
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
       resolve(window.google);
       return;
     }
@@ -120,7 +126,9 @@ export function initializeGoogleAuth(): Promise<any> {
       if (window.google) {
         window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
+          callback: (response: any) => handleCredentialResponse(response, loginCallback),
+          auto_select: false,
+          cancel_on_tap_outside: true
         });
         resolve(window.google);
       } else {
@@ -132,9 +140,8 @@ export function initializeGoogleAuth(): Promise<any> {
   });
 }
 
-function handleCredentialResponse(response: any) {
-  // This will be called when user signs in with Google
+function handleCredentialResponse(response: any, loginCallback: (token: string) => Promise<void>) {
   const token = response.credential;
-  // Use the auth context to login
-  console.log('Google auth token received:', token);
+  console.log('Google auth token received, logging in...');
+  loginCallback(token);
 }

@@ -1,4 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/auth";
+import { ChevronDown, User, Settings, CreditCard, Shield, LogOut } from "lucide-react";
 
 interface HeaderProps {
   user: any;
@@ -8,12 +11,18 @@ interface HeaderProps {
 }
 
 export function Header({ user, notificationCount, databaseStatus, onMobileMenuToggle }: HeaderProps) {
+  const { logout } = useAuth();
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase();
+  };
+
+  const handleSignOut = () => {
+    logout();
   };
 
   return (
@@ -78,21 +87,75 @@ export function Header({ user, notificationCount, databaseStatus, onMobileMenuTo
             </div>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-3" data-testid="user-menu">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium" data-testid="text-user-name">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center space-x-3 h-auto p-2 hover:bg-muted" 
+                  data-testid="button-user-menu"
+                >
+                  <div className="hidden sm:block text-right">
+                    <p className="text-sm font-medium" data-testid="text-user-name">
+                      {user?.name || 'User'}
+                    </p>
+                    <p className="text-xs text-muted-foreground" data-testid="text-user-role">
+                      {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Staff'}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-primary-foreground text-sm font-medium" data-testid="text-user-initials">
+                      {user?.name ? getInitials(user.name) : 'U'}
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48" data-testid="user-dropdown-menu">
+                <div className="px-2 py-1.5 text-sm font-medium">
                   {user?.name || 'User'}
-                </p>
-                <p className="text-xs text-muted-foreground" data-testid="text-user-role">
-                  {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Staff'}
-                </p>
-              </div>
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground text-sm font-medium" data-testid="text-user-initials">
-                  {user?.name ? getInitials(user.name) : 'U'}
-                </span>
-              </div>
-            </div>
+                </div>
+                <div className="px-2 py-1 text-xs text-muted-foreground">
+                  {user?.email || ''}
+                </div>
+                <DropdownMenuSeparator />
+                
+                {user?.role === 'admin' && (
+                  <>
+                    <DropdownMenuItem data-testid="menu-admin">
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>Admin Panel</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                <DropdownMenuItem data-testid="menu-settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem data-testid="menu-account">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  <span>Account & Billing</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem data-testid="menu-profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="text-destructive focus:text-destructive" 
+                  data-testid="menu-signout"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

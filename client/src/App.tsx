@@ -25,28 +25,23 @@ function LoginSplashPage() {
   const { login, loginDev } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  const handleGoogleResponse = async (token: string) => {
+    setIsGoogleLoading(true);
+    try {
+      await login(token);
+    } catch (error) {
+      console.error('Google login failed:', error);
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Load Google OAuth script
+    // Load Google OAuth script with login callback
     const loadGoogleScript = async () => {
       try {
-        if (window.google) return;
-        
-        const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
-        
-        script.onload = () => {
-          if (window.google) {
-            window.google.accounts.id.initialize({
-              client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-              callback: handleGoogleResponse,
-              auto_select: false,
-              cancel_on_tap_outside: true
-            });
-          }
-        };
+        const { initializeGoogleAuth } = await import('@/lib/auth');
+        await initializeGoogleAuth(handleGoogleResponse);
       } catch (error) {
         console.error('Failed to load Google OAuth:', error);
       }
@@ -55,16 +50,6 @@ function LoginSplashPage() {
     loadGoogleScript();
   }, []);
 
-  const handleGoogleResponse = async (response: any) => {
-    setIsGoogleLoading(true);
-    try {
-      await login(response.credential);
-    } catch (error) {
-      console.error('Google login failed:', error);
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
 
   const handleGoogleSignIn = () => {
     if (window.google) {
